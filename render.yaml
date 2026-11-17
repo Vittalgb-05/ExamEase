@@ -1,6 +1,5 @@
 # Render Blueprint for ExamEase
-# Create a "Blueprint" on render.com and connect your GitHub repository.
-# Set DATABASE_URL (e.g. from Neon or Render PostgreSQL); SECRET_KEY is generated automatically.
+# Deploy via Render Dashboard > Blueprints > Connect GitHub Repository
 services:
   - type: web
     name: examease
@@ -16,4 +15,12 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: examease-db
+          property: connectionString
+
+databases:
+  - name: examease-db
+    plan: free
+    databaseName: examease
+    user: examease
