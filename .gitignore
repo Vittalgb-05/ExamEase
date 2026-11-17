@@ -1,9 +1,31 @@
+# Python / Django
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.sqlite3
 db.sqlite3
 staticfiles/
+
+# Environment and Secrets
 .env
+.env.*
+!.env.example
+
+# Virtual Environments
 venv/
 .venv/
+ENV/
+env/
+
+# Editor / OS files
 .idea/
 .vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Automation & Browser Temp Profiles
+demo-evidence/edge-automation-profile/
+demo-evidence/edge-cdp-profile/
+*.log

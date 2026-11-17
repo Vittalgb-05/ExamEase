@@ -409,3 +409,301 @@ class TabSwitchTests(TestCase):
         self.assertEqual(resp.status_code, 403)
         attempt.refresh_from_db()
         self.assertEqual(attempt.tab_switches, 0)
+
+
+class UserProfileTests(TestCase):
+    def setUp(self):
+        self.teacher = User.objects.create_user("prof_test", password="pw12345!", role="teacher", first_name="Alan", last_name="Turing", email="alan@example.com")
+        self.student = User.objects.create_user("stud_test", password="pw12345!", role="student", first_name="Ada", last_name="Lovelace", email="ada@example.com")
+
+    def test_profile_requires_login(self):
+        res = self.client.get(reverse("profile"))
+        self.assertEqual(res.status_code, 302)
+        self.assertIn(reverse("login"), res.url)
+
+    def test_profile_renders_for_teacher_and_student(self):
+        self.client.login(username="prof_test", password="pw12345!")
+        res = self.client.get(reverse("profile"))
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, "Alan Turing")
+        self.assertIn("user_stats", res.context)
+
+        self.client.login(username="stud_test", password="pw12345!")
+        res = self.client.get(reverse("profile"))
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, "Ada Lovelace")
+
+    def test_profile_update_successful(self):
+        self.client.login(username="stud_test", password="pw12345!")
+        res = self.client.post(reverse("profile"), {
+            "first_name": "Augusta",
+            "last_name": "King",
+            "email": "augusta@example.com",
+        })
+        self.assertRedirects(res, reverse("profile"))
+        self.student.refresh_from_db()
+        self.assertEqual(self.student.first_name, "Augusta")
+        self.assertEqual(self.student.last_name, "King")
+        self.assertEqual(self.student.email, "augusta@example.com")
+
+
+class DashboardSearchAndFilterTests(BaseCase):
+    def test_teacher_dashboard_search_and_filter(self):
+        self.client.login(username="teach", password="pw12345!")
+        # Search match
+        res = self.client.get(reverse("dashboard") + "?q=Test")
+        self.assertEqual(len(res.context["exams"]), 1)
+
+        # Search mismatch
+        res = self.client.get(reverse("dashboard") + "?q=NonExistentSubject")
+        self.assertEqual(len(res.context["exams"]), 0)
+
+        # Filter by status
+        res = self.client.get(reverse("dashboard") + "?status=open")
+        self.assertEqual(len(res.context["exams"]), 1)
+
+        res = self.client.get(reverse("dashboard") + "?status=draft")
+        self.assertEqual(len(res.context["exams"]), 0)
+
+    def test_student_dashboard_search(self):
+        self.client.login(username="stud", password="pw12345!")
+        res = self.client.get(reverse("dashboard") + "?q=Test")
+        self.assertEqual(len(res.context["available"]), 1)
+
+        res = self.client.get(reverse("dashboard") + "?q=NoMatchExam")
+        self.assertEqual(len(res.context["available"]), 0)
+
+    def test_exam_results_filter_pass_fail(self):
+        # Student 1 passes
+        att1 = Attempt.objects.create(exam=self.exam, student=self.student, deadline=timezone.now() + timedelta(minutes=5))
+        self.pick(att1, right_for=["Q1?", "Q2?"])
+        att1.finalize()
+
+        # Student 2 fails
+        stud2 = User.objects.create_user("stud_fail", password="pw12345!", role="student")
+        att2 = Attempt.objects.create(exam=self.exam, student=stud2, deadline=timezone.now() + timedelta(minutes=5))
+        self.pick(att2, right_for=[])
+        att2.finalize()
+
+        self.client.login(username="teach", password="pw12345!")
+        res = self.client.get(reverse("exam_results", args=[self.exam.pk]))
+        self.assertEqual(len(res.context["attempts"]), 2)
+
+        res_pass = self.client.get(reverse("exam_results", args=[self.exam.pk]) + "?status=pass")
+        self.assertEqual(len(res_pass.context["attempts"]), 1)
+
+        res_fail = self.client.get(reverse("exam_results", args=[self.exam.pk]) + "?status=fail")
+        self.assertEqual(len(res_fail.context["attempts"]), 1)
+
+
+class ClassroomManagementExtendedTests(TestCase):
+    def setUp(self):
+        self.teacher = User.objects.create_user("t_mgr", password="pw12345!", role="teacher")
+        self.student = User.objects.create_user("s_mgr", password="pw12345!", role="student")
+        self.classroom = ClassRoom.objects.create(teacher=self.teacher, name="Original Name")
+
+    def test_class_edit(self):
+        self.client.login(username="t_mgr", password="pw12345!")
+        res = self.client.post(reverse("class_edit", args=[self.classroom.pk]), {"name": "Updated Name"})
+        self.assertRedirects(res, reverse("class_detail", args=[self.classroom.pk]))
+        self.classroom.refresh_from_db()
+        self.assertEqual(self.classroom.name, "Updated Name")
+
+    def test_class_delete(self):
+        self.client.login(username="t_mgr", password="pw12345!")
+        res = self.client.post(reverse("class_delete", args=[self.classroom.pk]))
+        self.assertRedirects(res, reverse("class_list"))
+        self.assertFalse(ClassRoom.objects.filter(pk=self.classroom.pk).exists())
+
+    def test_class_regenerate_code(self):
+        self.client.login(username="t_mgr", password="pw12345!")
+        old_code = self.classroom.code
+        res = self.client.post(reverse("class_regenerate_code", args=[self.classroom.pk]))
+        self.assertRedirects(res, reverse("class_detail", args=[self.classroom.pk]))
+        self.classroom.refresh_from_db()
+        self.assertNotEqual(self.classroom.code, old_code)
+
+    def test_class_leave(self):
+        Enrollment.objects.create(classroom=self.classroom, student=self.student)
+        self.client.login(username="s_mgr", password="pw12345!")
+        res = self.client.post(reverse("class_leave", args=[self.classroom.pk]))
+        self.assertRedirects(res, reverse("dashboard"))
+        self.assertFalse(Enrollment.objects.filter(classroom=self.classroom, student=self.student).exists())
+
+
+class TeacherResultReviewTests(BaseCase):
+    def test_teacher_can_view_student_result(self):
+        att = Attempt.objects.create(exam=self.exam, student=self.student, deadline=timezone.now() + timedelta(minutes=5))
+        self.pick(att, right_for=["Q1?"])
+        att.finalize()
+
+        # Teacher of the exam can view the student's result
+        self.client.login(username="teach", password="pw12345!")
+        res = self.client.get(reverse("attempt_result", args=[att.pk]))
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.context["is_teacher_viewer"])
+        self.assertContains(res, "stud")
+
+        # Unrelated teacher cannot view
+        self.client.login(username="teach2", password="pw12345!")
+        res = self.client.get(reverse("attempt_result", args=[att.pk]))
+        self.assertRedirects(res, reverse("dashboard"))
+
+
+class PasswordChangeTests(TestCase):
+    def test_password_change_flow(self):
+        user = User.objects.create_user("pwd_user", password="old_password_123", role="student")
+        self.client.login(username="pwd_user", password="old_password_123")
+        res = self.client.get(reverse("password_change"))
+        self.assertEqual(res.status_code, 200)
+
+        post_data = {
+            "old_password": "old_password_123",
+            "new_password1": "NewSecurePass!456",
+            "new_password2": "NewSecurePass!456",
+        }
+        res_post = self.client.post(reverse("password_change"), post_data)
+        self.assertRedirects(res_post, reverse("password_change_done"))
+
+        # Re-login with new password
+        self.assertTrue(self.client.login(username="pwd_user", password="NewSecurePass!456"))
+
+
+class ComprehensiveTeacherStudentWorkflowTests(TestCase):
+    """Verifies the exact Teacher-to-Student workflow from Section 7 of the user prompt."""
+
+    def test_complete_teacher_to_student_workflow(self):
+        # 1. Teacher logs in
+        teacher = User.objects.create_user("teacher_test", password="teacher_pw123!", role="teacher")
+        self.client.login(username="teacher_test", password="teacher_pw123!")
+
+        # 2. Teacher creates Test Classroom
+        resp_cls = self.client.post(reverse("class_create"), {"name": "Test Classroom"})
+        cls_obj = ClassRoom.objects.get(name="Test Classroom", teacher=teacher)
+        self.assertRedirects(resp_cls, reverse("class_detail", args=[cls_obj.pk]))
+
+        # 3. Join code
+        join_code = cls_obj.code
+        self.assertEqual(len(join_code), 6)
+
+        # 4. Teacher creates exam "Python Fundamentals Test"
+        # 5 min duration, 50% pass mark (5 out of 10 marks)
+        now = timezone.now()
+        exam_data = {
+            "title": "Python Fundamentals Test",
+            "subject": "Computer Science",
+            "classroom": cls_obj.pk,
+            "description": "Assessment covering Python core concepts.",
+            "duration_minutes": 5,
+            "start_time": (now - timedelta(minutes=10)).strftime("%Y-%m-%dT%H:%M"),
+            "end_time": (now + timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M"),
+            "pass_percent": 50,
+            "shuffle": False,
+        }
+        resp_exam = self.client.post(reverse("exam_create"), exam_data)
+        exam_obj = Exam.objects.get(title="Python Fundamentals Test", teacher=teacher)
+        self.assertRedirects(resp_exam, reverse("exam_detail", args=[exam_obj.pk]))
+
+        # 5. Teacher adds 5 questions, 2 marks each (Total 10 marks)
+        q_data = [
+            ("What is Python?", ["Language", "Snake only", "Car", "City"], 1),
+            ("Output of 2 ** 3?", ["6", "8", "9", "5"], 2),
+            ("Keyword for function?", ["fun", "define", "def", "fn"], 3),
+            ("Is tuple immutable?", ["Yes", "No", "Sometimes", "Never"], 1),
+            ("List literal syntax?", ["[]", "{}", "()", "<>"], 1),
+        ]
+        created_questions = []
+        for text, opts, correct_num in q_data:
+            q_payload = {
+                "text": text,
+                "topic": "Python Core",
+                "marks": 2,
+                "choice1": opts[0],
+                "choice2": opts[1],
+                "choice3": opts[2],
+                "choice4": opts[3],
+                "correct": str(correct_num),
+            }
+            self.client.post(reverse("question_add", args=[exam_obj.pk]), q_payload)
+            created_questions.append(Question.objects.get(text=text, exam=exam_obj))
+
+        self.assertEqual(exam_obj.questions.count(), 5)
+        self.assertEqual(exam_obj.total_marks(), 10)
+
+        # 6. Publish exam
+        self.client.post(reverse("exam_toggle_publish", args=[exam_obj.pk]))
+        exam_obj.refresh_from_db()
+        self.assertTrue(exam_obj.is_published)
+
+        # 7. Student Session: student_test logs in
+        student = User.objects.create_user("student_test", password="student_pw123!", role="student")
+        self.client.login(username="student_test", password="student_pw123!")
+
+        # 8. Student joins class using teacher join code
+        resp_join = self.client.post(reverse("class_join"), {"code": join_code})
+        self.assertTrue(Enrollment.objects.filter(classroom=cls_obj, student=student).exists())
+
+        # 9. Student sees and starts the exam
+        resp_dash = self.client.get(reverse("dashboard"))
+        self.assertContains(resp_dash, "Python Fundamentals Test")
+
+        resp_start = self.client.post(reverse("exam_start", args=[exam_obj.pk]))
+        attempt = Attempt.objects.get(exam=exam_obj, student=student)
+        self.assertRedirects(resp_start, reverse("attempt_take", args=[attempt.pk]))
+
+        # 10. Student answers questions via autosave:
+        # Let's test 4 correct answers out of 5 (Score = 8/10, 80%, Pass!)
+        for i, q in enumerate(created_questions):
+            correct_choice = q.choices.get(is_correct=True)
+            wrong_choice = q.choices.filter(is_correct=False).first()
+            # answer first 4 correctly, 5th wrongly
+            chosen = correct_choice if i < 4 else wrong_choice
+            save_resp = self.client.post(
+                reverse("attempt_save", args=[attempt.pk]),
+                {"question": q.pk, "choice": chosen.pk}
+            )
+            self.assertEqual(save_resp.status_code, 200)
+
+        # 11. Student submits exam
+        resp_submit = self.client.post(reverse("attempt_submit", args=[attempt.pk]))
+        self.assertRedirects(resp_submit, reverse("attempt_result", args=[attempt.pk]))
+
+        attempt.refresh_from_db()
+        self.assertTrue(attempt.is_submitted)
+        self.assertEqual(attempt.score, 8)
+        self.assertEqual(attempt.total, 10)
+        self.assertEqual(attempt.percent, 80.0)
+        self.assertTrue(attempt.passed)
+
+        # 12. Student result page verification
+        resp_res = self.client.get(reverse("attempt_result", args=[attempt.pk]))
+        self.assertEqual(resp_res.status_code, 200)
+        # Score is split across a styled span, so the page text is "8" then "/ 10".
+        self.assertContains(resp_res, "8 <span")
+        self.assertContains(resp_res, "/ 10")
+        self.assertContains(resp_res, "80.0%")
+        self.assertContains(resp_res, "Passed")
+
+        # 13. Teacher reviews student attempt from teacher side
+        self.client.login(username="teacher_test", password="teacher_pw123!")
+        teacher_results = self.client.get(reverse("exam_results", args=[exam_obj.pk]))
+        self.assertEqual(teacher_results.status_code, 200)
+        self.assertContains(teacher_results, "student_test")
+        self.assertContains(teacher_results, ">8</span> / 10")
+        self.assertContains(teacher_results, "80.0%")
+        self.assertContains(teacher_results, "Pass")
+
+        # Teacher clicks into student review
+        teacher_review = self.client.get(reverse("attempt_result", args=[attempt.pk]))
+        self.assertEqual(teacher_review.status_code, 200)
+        self.assertContains(teacher_review, "8 <span")
+        self.assertContains(teacher_review, "/ 10")
+        self.assertTrue(teacher_review.context["is_teacher_viewer"])
+
+        # Teacher downloads CSV
+        csv_resp = self.client.get(reverse("exam_results_csv", args=[exam_obj.pk]))
+        self.assertEqual(csv_resp.status_code, 200)
+        self.assertIn("student_test", csv_resp.content.decode())
+        self.assertIn("8", csv_resp.content.decode())
+
+

@@ -1,61 +1,187 @@
 {% extends "core/base.html" %}
-{% block title %}Online Exam System · Online exams with instant results{% endblock %}
+{% load static %}
+{% block title %}ExamEase · Smart Examinations. Simple Evaluation.{% endblock %}
+
 {% block content %}
-<section class="hero text-center">
-  <span class="badge-soft soft-blue mb-3 d-inline-block">Online exams with instant results</span>
-  <h1 class="mb-3">Exams without the paperwork.</h1>
-  <p class="lead text-muted mx-auto" style="max-width: 640px">
-    Teachers build timed multiple-choice exams. Students answer in the browser.
-    Marking happens the moment they submit, and every exam comes with analytics on how the class did.
-  </p>
-  <div class="d-flex flex-column align-items-center gap-2 mt-4">
-    <a href="{% url 'register' %}" class="btn btn-brand btn-lg px-4">Get started free</a>
-    <div class="small text-muted">Already have an account? <a href="{% url 'login' %}">Log in</a></div>
+<!-- Hero Section -->
+<section class="hero-section text-center">
+  <div class="container">
+    <div class="d-inline-flex align-items-center gap-2 badge-soft soft-blue mb-3 px-3 py-2 rounded-pill">
+      <span class="badge bg-primary rounded-pill">ExamEase by Vittal</span>
+      <span>Smart Examinations. Simple Evaluation.</span>
+    </div>
+    
+    <h1 class="hero-title mb-3">
+      Smart Examinations.<br>
+      <span class="hero-highlight">Simple Evaluation.</span>
+    </h1>
+
+    <p class="hero-subtitle">
+      ExamEase gives educators full control to build, time, and analyze multiple-choice examinations while giving students a frictionless, reliable testing interface with instant grading.
+    </p>
+
+    <div class="d-flex flex-wrap justify-content-center align-items-center gap-3 mt-4">
+      <a href="{% url 'register' %}" class="btn btn-brand btn-lg shadow-sm">
+        <i class="bi bi-rocket-takeoff me-2"></i>Create Free Account
+      </a>
+      <a href="{% url 'login' %}" class="btn btn-outline-brand btn-lg">
+        <i class="bi bi-box-arrow-in-right me-2"></i>Sign In / Demo Login
+      </a>
+    </div>
+
+    <!-- Quick Credentials Banner for Evaluation / Interview Showcase -->
+    <div class="mt-4 p-3 rounded-4 bg-white border shadow-sm mx-auto d-inline-block text-start" style="max-width: 600px;">
+      <div class="d-flex align-items-center gap-2 text-primary fw-bold small mb-1">
+        <i class="bi bi-key-fill"></i> Instant Demo Credentials
+      </div>
+      <div class="row g-2 small text-muted">
+        <div class="col-sm-6">
+          <strong class="text-dark">Teacher:</strong> <code>teacher1</code> &middot; <code>demo12345</code>
+        </div>
+        <div class="col-sm-6">
+          <strong class="text-dark">Student:</strong> <code>student01</code> &middot; <code>demo12345</code>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
-<section class="row g-4 pb-4">
-  <div class="col-md-4 feature">
-    <div class="card h-100 p-4">
-      <i class="bi bi-stopwatch mb-2"></i>
-      <h5>Tamper-proof timing</h5>
-      <p class="text-muted mb-0">Deadlines are enforced on the server, so changing the device clock gives no extra time. Answers save automatically as students go.</p>
+<!-- Trust / Feature Highlights Strip -->
+<div class="row g-3 text-center my-4">
+  <div class="col-6 col-md-3">
+    <div class="p-3 bg-white border rounded-4 shadow-sm">
+      <div class="fw-bold fs-4 text-primary">100%</div>
+      <div class="small text-muted text-uppercase fw-semibold" style="letter-spacing: .05em;">Server Timed</div>
     </div>
   </div>
-  <div class="col-md-4 feature">
-    <div class="card h-100 p-4">
-      <i class="bi bi-lightning-charge mb-2"></i>
-      <h5>Instant grading</h5>
-      <p class="text-muted mb-0">Scores and a full answer review are ready as soon as the exam ends. No manual marking.</p>
+  <div class="col-6 col-md-3">
+    <div class="p-3 bg-white border rounded-4 shadow-sm">
+      <div class="fw-bold fs-4 text-success">Real-time</div>
+      <div class="small text-muted text-uppercase fw-semibold" style="letter-spacing: .05em;">Auto-Save Answers</div>
     </div>
   </div>
-  <div class="col-md-4 feature">
-    <div class="card h-100 p-4">
-      <i class="bi bi-bar-chart-line mb-2"></i>
-      <h5>Analytics for teachers</h5>
-      <p class="text-muted mb-0">See the score spread, which questions were too hard, and which topics need another lesson.</p>
+  <div class="col-6 col-md-3">
+    <div class="p-3 bg-white border rounded-4 shadow-sm">
+      <div class="fw-bold fs-4 text-warning">Zero</div>
+      <div class="small text-muted text-uppercase fw-semibold" style="letter-spacing: .05em;">Manual Grading</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="p-3 bg-white border rounded-4 shadow-sm">
+      <div class="fw-bold fs-4 text-info">Insightful</div>
+      <div class="small text-muted text-uppercase fw-semibold" style="letter-spacing: .05em;">Class Analytics</div>
+    </div>
+  </div>
+</div>
+
+<!-- Features Section -->
+<section id="features" class="py-4">
+  <div class="text-center mb-5">
+    <span class="badge-soft soft-blue mb-2">Core Capabilities</span>
+    <h2 class="fw-extrabold">Engineered for Academic Excellence</h2>
+    <p class="text-muted mx-auto" style="max-width: 580px;">Everything you need to configure and evaluate examinations with total peace of mind.</p>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-4">
+      <div class="feature-box">
+        <div class="feature-box-icon">
+          <i class="bi bi-clock-history"></i>
+        </div>
+        <h5 class="fw-bold">Tamper-Proof Timing</h5>
+        <p class="text-muted mb-0">Deadlines are cryptographically calculated and enforced strictly on the server. Adjusting client computer clocks or refreshing gives zero extra advantage.</p>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="feature-box">
+        <div class="feature-box-icon" style="background-color: var(--success-bg); color: var(--success);">
+          <i class="bi bi-cloud-check"></i>
+        </div>
+        <h5 class="fw-bold">Atomic Auto-Saving</h5>
+        <p class="text-muted mb-0">Every choice selection triggers an asynchronous server sync. Students never lose progress if their network flickers or battery runs low.</p>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="feature-box">
+        <div class="feature-box-icon" style="background-color: var(--info-bg); color: var(--info);">
+          <i class="bi bi-bar-chart-steps"></i>
+        </div>
+        <h5 class="fw-bold">Deep Performance Analytics</h5>
+        <p class="text-muted mb-0">Visual score distributions, weak-topic detection, and per-question difficulty calculations help educators pinpoint exactly where students need review.</p>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="feature-box">
+        <div class="feature-box-icon" style="background-color: var(--warning-bg); color: var(--warning);">
+          <i class="bi bi-eye"></i>
+        </div>
+        <h5 class="fw-bold">Tab-Switch Integrity Tracking</h5>
+        <p class="text-muted mb-0">Detects and logs when a student moves focus away from the test window, providing teachers with transparent honesty telemetry without false alarms.</p>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="feature-box">
+        <div class="feature-box-icon" style="background-color: #f3e8ff; color: #7e22ce;">
+          <i class="bi bi-shuffle"></i>
+        </div>
+        <h5 class="fw-bold">Shuffling & Randomization</h5>
+        <p class="text-muted mb-0">Deterministic per-attempt pseudorandom shuffling ensures adjacent students see questions and option sequences in different orders.</p>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="feature-box">
+        <div class="feature-box-icon" style="background-color: #e0f2fe; color: #0369a1;">
+          <i class="bi bi-printer"></i>
+        </div>
+        <h5 class="fw-bold">Printable Result Transcripts</h5>
+        <p class="text-muted mb-0">Clean print layouts generate branded result cards with scores, pass/fail status, and question review summaries suitable for physical filing or PDF export.</p>
+      </div>
     </div>
   </div>
 </section>
 
-<section class="pb-4">
-  <h2 class="h4 fw-bold text-center mb-4">How it works</h2>
-  <div class="row g-4 text-center">
-    <div class="col-md-4">
-      <div class="stat"><div class="num">1</div></div>
-      <h6 class="fw-semibold">Teacher builds the exam</h6>
-      <p class="small text-muted mb-0">Add timed multiple-choice questions, set marks and topics, then publish.</p>
+<!-- How It Works Section -->
+<section id="how-it-works" class="py-5">
+  <div class="card p-4 p-md-5 border-0 bg-white shadow-sm rounded-4">
+    <div class="text-center mb-5">
+      <span class="badge-soft soft-blue mb-2">Simple Workflow</span>
+      <h2 class="fw-extrabold">How ExamEase Works</h2>
+      <p class="text-muted">A streamlined, end-to-end evaluation flow designed for simplicity.</p>
     </div>
-    <div class="col-md-4">
-      <div class="stat"><div class="num">2</div></div>
-      <h6 class="fw-semibold">Students take it online</h6>
-      <p class="small text-muted mb-0">Students start from their dashboard and answer in the browser with a live countdown.</p>
+
+    <div class="row g-4 text-center">
+      <div class="col-md-4">
+        <div class="rounded-circle bg-primary-subtle text-primary fw-bold fs-4 d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">1</div>
+        <h5 class="fw-bold">Author & Publish</h5>
+        <p class="text-muted small">Teachers create an exam, assign it to a classroom or make it open, input MCQ questions with marks, and set the duration window.</p>
+      </div>
+      <div class="col-md-4">
+        <div class="rounded-circle bg-primary-subtle text-primary fw-bold fs-4 d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">2</div>
+        <h5 class="fw-bold">Attempt with Confidence</h5>
+        <p class="text-muted small">Students start from their dashboard, navigate using the live question palette, flag questions for review, and benefit from live auto-save.</p>
+      </div>
+      <div class="col-md-4">
+        <div class="rounded-circle bg-primary-subtle text-primary fw-bold fs-4 d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">3</div>
+        <h5 class="fw-bold">Review & Analyze</h5>
+        <p class="text-muted small">The instant the timer runs out or the student submits, scores are finalized atomically. Detailed reviews and aggregate reports are ready immediately.</p>
+      </div>
     </div>
-    <div class="col-md-4">
-      <div class="stat"><div class="num">3</div></div>
-      <h6 class="fw-semibold">Results are ready instantly</h6>
-      <p class="small text-muted mb-0">Scores post on submit or at time-up, with a review and class analytics for the teacher.</p>
-    </div>
+  </div>
+</section>
+
+<!-- Bottom CTA -->
+<section class="py-4 text-center">
+  <div class="p-5 rounded-4" style="background: linear-gradient(135deg, #0f172a 0%, #1e40af 100%); color: #ffffff;">
+    <h2 class="fw-bold text-white mb-2">Ready to modernize your examination process?</h2>
+    <p class="text-slate-300 mx-auto mb-4" style="max-width: 540px; color: #cbd5e1;">Join teachers and students using ExamEase for seamless assessments and automated evaluations.</p>
+    <a href="{% url 'register' %}" class="btn btn-light btn-lg fw-bold text-primary px-4 shadow-sm">
+      Get Started Today
+    </a>
   </div>
 </section>
 {% endblock %}

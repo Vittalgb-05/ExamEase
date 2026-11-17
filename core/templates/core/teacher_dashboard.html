@@ -1,43 +1,183 @@
 {% extends "core/base.html" %}
-{% block title %}My exams · Online Exam System{% endblock %}
+{% load static %}
+{% block title %}Teacher Dashboard · ExamEase{% endblock %}
+
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+<!-- Dashboard Header -->
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
   <div>
-    <h2 class="page-title mb-0">My exams</h2>
-    <div class="text-muted">Create exams, add questions, publish, then check the results.</div>
+    <h2 class="page-title mb-1">Teacher Dashboard</h2>
+    <div class="page-subtitle">Manage examinations, oversee student activity, and track performance.</div>
   </div>
-  <div class="d-flex gap-2">
-    <a href="{% url 'class_list' %}" class="btn btn-light border"><i class="bi bi-people me-1"></i>My classes</a>
-    <a href="{% url 'exam_create' %}" class="btn btn-brand"><i class="bi bi-plus-lg me-1"></i>New exam</a>
+  <div class="d-flex flex-wrap gap-2">
+    <a href="{% url 'class_list' %}" class="btn btn-light border shadow-sm">
+      <i class="bi bi-people me-1 text-primary"></i> My Classes
+    </a>
+    <a href="{% url 'exam_create' %}" class="btn btn-brand shadow-sm">
+      <i class="bi bi-plus-lg me-1"></i> Create Exam
+    </a>
   </div>
 </div>
 
+<!-- Key Performance Indicators (KPI Cards) -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-icon blue">
+        <i class="bi bi-journal-check"></i>
+      </div>
+      <div class="stat-details">
+        <div class="num">{{ stats.total_exams }}</div>
+        <div class="lbl">Total Exams ({{ stats.published_exams }} Published)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-icon green">
+        <i class="bi bi-mortarboard"></i>
+      </div>
+      <div class="stat-details">
+        <div class="num">{{ stats.total_students }}</div>
+        <div class="lbl">Enrolled Students</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-icon amber">
+        <i class="bi bi-send-check"></i>
+      </div>
+      <div class="stat-details">
+        <div class="num">{{ stats.total_submissions }}</div>
+        <div class="lbl">Total Submissions</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-icon navy">
+        <i class="bi bi-graph-up-arrow"></i>
+      </div>
+      <div class="stat-details">
+        <div class="num">{{ stats.avg_score }}%</div>
+        <div class="lbl">Average Performance</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Search & Status Filter Bar -->
+<div class="card p-3 mb-4 shadow-sm border-0">
+  <form method="get" class="row g-2 align-items-center">
+    <div class="col-md-5">
+      <div class="input-group">
+        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+        <input type="text" name="q" class="form-control border-start-0 ps-0" placeholder="Search by exam title or subject..." value="{{ search_query }}">
+      </div>
+    </div>
+    <div class="col-md-5 d-flex flex-wrap gap-1">
+      <a href="{% url 'dashboard' %}{% if search_query %}?q={{ search_query }}{% endif %}" class="btn btn-sm {% if not status_filter %}btn-brand{% else %}btn-light border{% endif %}">
+        All ({{ all_exams_count }})
+      </a>
+      <a href="{% url 'dashboard' %}?status=open{% if search_query %}&q={{ search_query }}{% endif %}" class="btn btn-sm {% if status_filter == 'open' %}btn-brand{% else %}btn-light border{% endif %}">
+        Live Now
+      </a>
+      <a href="{% url 'dashboard' %}?status=upcoming{% if search_query %}&q={{ search_query }}{% endif %}" class="btn btn-sm {% if status_filter == 'upcoming' %}btn-brand{% else %}btn-light border{% endif %}">
+        Scheduled
+      </a>
+      <a href="{% url 'dashboard' %}?status=draft{% if search_query %}&q={{ search_query }}{% endif %}" class="btn btn-sm {% if status_filter == 'draft' %}btn-brand{% else %}btn-light border{% endif %}">
+        Drafts
+      </a>
+      <a href="{% url 'dashboard' %}?status=closed{% if search_query %}&q={{ search_query }}{% endif %}" class="btn btn-sm {% if status_filter == 'closed' %}btn-brand{% else %}btn-light border{% endif %}">
+        Closed
+      </a>
+    </div>
+    <div class="col-md-2 text-md-end">
+      {% if search_query or status_filter %}
+        <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-x-circle me-1"></i> Clear Filter
+        </a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- Examinations Table or Empty State -->
 {% if exams %}
-<div class="card">
+<div class="card shadow-sm border-0 rounded-4 overflow-hidden">
   <div class="table-responsive">
-    <table class="table align-middle mb-0">
+    <table class="table table-hover align-middle mb-0">
       <thead class="table-light">
-        <tr><th>Exam</th><th>Window</th><th class="text-center">Questions</th><th class="text-center">Submitted</th><th>Status</th><th></th></tr>
+        <tr>
+          <th>Examination</th>
+          <th>Class Access</th>
+          <th>Testing Window</th>
+          <th class="text-center">Questions</th>
+          <th class="text-center">Submissions</th>
+          <th>Status</th>
+          <th class="text-end pe-3">Actions</th>
+        </tr>
       </thead>
       <tbody>
       {% for exam in exams %}
         <tr>
           <td>
-            <a class="fw-semibold text-decoration-none" href="{% url 'exam_detail' exam.pk %}">{{ exam.title }}</a>
-            <div class="text-muted small">{{ exam.subject }} &middot; {{ exam.duration_minutes }} min</div>
+            <div class="d-flex align-items-center gap-2">
+              <div class="rounded-3 bg-primary-subtle text-primary p-2 d-inline-flex align-items-center justify-content-center" style="width:36px; height:36px;">
+                <i class="bi bi-file-earmark-text"></i>
+              </div>
+              <div>
+                <a class="fw-bold text-dark text-decoration-none" href="{% url 'exam_detail' exam.pk %}">
+                  {{ exam.title }}
+                </a>
+                <div class="text-muted small">
+                  {{ exam.subject }} &middot; <i class="bi bi-stopwatch"></i> {{ exam.duration_minutes }} min
+                </div>
+              </div>
+            </div>
           </td>
-          <td class="small">{{ exam.start_time|date:"d M, H:i" }}<br>to {{ exam.end_time|date:"d M, H:i" }}</td>
-          <td class="text-center">{{ exam.q_count }}</td>
-          <td class="text-center">{{ exam.done_count }}</td>
           <td>
-            {% if not exam.is_published %}<span class="badge-soft soft-gray">Draft</span>
-            {% elif exam.state == 'open' %}<span class="badge-soft soft-green">Live now</span>
-            {% elif exam.state == 'upcoming' %}<span class="badge-soft soft-blue">Scheduled</span>
-            {% else %}<span class="badge-soft soft-gray">Closed</span>{% endif %}
+            {% if exam.classroom %}
+              <span class="badge-soft soft-blue"><i class="bi bi-building me-1"></i>{{ exam.classroom.name }}</span>
+            {% else %}
+              <span class="badge-soft soft-gray"><i class="bi bi-globe me-1"></i>All Students</span>
+            {% endif %}
           </td>
-          <td class="text-end text-nowrap">
-            <a class="btn btn-sm btn-light border" href="{% url 'exam_detail' exam.pk %}">Manage</a>
-            <a class="btn btn-sm btn-light border" href="{% url 'exam_analytics' exam.pk %}"><i class="bi bi-bar-chart"></i></a>
+          <td class="small">
+            <div class="fw-semibold text-slate-800">{{ exam.start_time|date:"d M Y, H:i" }}</div>
+            <div class="text-muted">to {{ exam.end_time|date:"d M Y, H:i" }}</div>
+          </td>
+          <td class="text-center">
+            <span class="badge bg-light text-dark border">{{ exam.q_count }}</span>
+          </td>
+          <td class="text-center">
+            <span class="badge bg-light text-primary border fw-bold">{{ exam.done_count }}</span>
+          </td>
+          <td>
+            {% if not exam.is_published %}
+              <span class="badge-soft soft-gray"><i class="bi bi-pencil-square"></i> Draft</span>
+            {% elif exam.state == 'open' %}
+              <span class="badge-soft soft-green"><i class="bi bi-broadcast"></i> Live Now</span>
+            {% elif exam.state == 'upcoming' %}
+              <span class="badge-soft soft-blue"><i class="bi bi-calendar3"></i> Scheduled</span>
+            {% else %}
+              <span class="badge-soft soft-gray"><i class="bi bi-check-circle"></i> Closed</span>
+            {% endif %}
+          </td>
+          <td class="text-end pe-3 text-nowrap">
+            <a class="btn btn-sm btn-light border" href="{% url 'exam_detail' exam.pk %}" title="Manage exam questions and settings">
+              <i class="bi bi-gear me-1"></i> Manage
+            </a>
+            <a class="btn btn-sm btn-light border" href="{% url 'exam_results' exam.pk %}" title="View submissions & leaderboard">
+              <i class="bi bi-list-check"></i>
+            </a>
+            <a class="btn btn-sm btn-light border" href="{% url 'exam_analytics' exam.pk %}" title="View deep analytics">
+              <i class="bi bi-bar-chart"></i>
+            </a>
           </td>
         </tr>
       {% endfor %}
@@ -46,11 +186,30 @@
   </div>
 </div>
 {% else %}
-<div class="card p-5 text-center">
-  <i class="bi bi-journal-plus display-5 text-muted"></i>
-  <h5 class="mt-3">No exams yet</h5>
-  <p class="text-muted">Create your first exam to get started.</p>
-  <div><a href="{% url 'exam_create' %}" class="btn btn-brand">Create exam</a></div>
-</div>
+  <div class="card p-5 text-center shadow-sm border-0 rounded-4">
+    <div class="empty-state">
+      <div class="empty-state-icon">
+        <i class="bi bi-journal-plus"></i>
+      </div>
+      <h4 class="empty-state-title">
+        {% if search_query or status_filter %}No matching examinations found{% else %}No examinations created yet{% endif %}
+      </h4>
+      <p class="empty-state-desc">
+        {% if search_query or status_filter %}
+          Try adjusting your search keywords or clearing your status filter to see all exams.
+        {% else %}
+          Get started by authoring your first examination. You can set time limits, randomize questions, and track results automatically.
+        {% endif %}
+      </p>
+      <div>
+        {% if search_query or status_filter %}
+          <a href="{% url 'dashboard' %}" class="btn btn-outline-brand me-2">Clear Filter</a>
+        {% endif %}
+        <a href="{% url 'exam_create' %}" class="btn btn-brand">
+          <i class="bi bi-plus-lg me-1"></i> Create Exam
+        </a>
+      </div>
+    </div>
+  </div>
 {% endif %}
 {% endblock %}

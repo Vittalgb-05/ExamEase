@@ -1,44 +1,155 @@
 {% extends "core/base.html" %}
-{% block title %}{{ classroom.name }} · Online Exam System{% endblock %}
-{% block content %}
-<a href="{% url 'class_list' %}" class="text-decoration-none small"><i class="bi bi-arrow-left"></i> My classes</a>
-<h2 class="page-title mt-1 mb-3">{{ classroom.name }}</h2>
+{% load static %}
+{% block title %}{{ classroom.name }} · Class Details · ExamEase{% endblock %}
 
-<div class="card p-4 mb-4">
-  <div class="text-muted small text-uppercase" style="letter-spacing:.05em">Join code</div>
-  <div class="d-flex align-items-center gap-3 flex-wrap">
-    <span class="fs-2 fw-bold font-monospace" style="color: var(--brand); letter-spacing: .15em">{{ classroom.code }}</span>
-    <span class="text-muted small">Students enter this code on their dashboard to join.</span>
+{% block content %}
+<div class="mb-3">
+  <a href="{% url 'class_list' %}" class="btn btn-sm btn-light border text-muted">
+    <i class="bi bi-arrow-left me-1"></i> Back to Classes
+  </a>
+</div>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+  <div>
+    <h2 class="page-title mb-1">{{ classroom.name }}</h2>
+    <div class="page-subtitle">Classroom overview, student roster, and assigned exams.</div>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a href="{% url 'class_edit' classroom.pk %}" class="btn btn-sm btn-light border shadow-sm">
+      <i class="bi bi-pencil me-1"></i> Edit Class
+    </a>
+    <form method="post" action="{% url 'class_regenerate_code' classroom.pk %}" class="d-inline" onsubmit="return confirm('Generate a new join code? The previous code will no longer work for new students.');">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-sm btn-light border shadow-sm">
+        <i class="bi bi-arrow-repeat me-1"></i> New Code
+      </button>
+    </form>
+    <a href="{% url 'exam_create' %}" class="btn btn-sm btn-brand shadow-sm">
+      <i class="bi bi-plus-lg me-1"></i> Assign Exam
+    </a>
+    <form method="post" action="{% url 'class_delete' classroom.pk %}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this class?');">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-sm btn-outline-danger shadow-sm">
+        <i class="bi bi-trash me-1"></i> Delete
+      </button>
+    </form>
   </div>
 </div>
 
+<!-- Class Code Display Card -->
+<div class="card p-4 mb-4 shadow-sm border-0 rounded-4" style="background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%); border-left: 4px solid var(--brand-blue) !important;">
+  <div class="row align-items-center g-3">
+    <div class="col-md-7">
+      <div class="text-uppercase small fw-bold text-primary mb-1" style="letter-spacing: .08em;">Student Join Code</div>
+      <div class="d-flex align-items-center gap-3 flex-wrap">
+        <span class="fs-1 fw-extrabold font-monospace text-primary tracking-wider">{{ classroom.code }}</span>
+        <button class="btn btn-sm btn-outline-brand" id="copyCodeBtn" onclick="copyCode('{{ classroom.code }}', this)">
+          <i class="bi bi-clipboard me-1"></i> Copy Code
+        </button>
+      </div>
+      <div class="text-muted small mt-2">
+        Share this code with your students. They enter it on their ExamEase student dashboard to join instantly.
+      </div>
+    </div>
+    <div class="col-md-5 text-md-end">
+      <div class="d-inline-flex align-items-center gap-3 bg-white p-3 rounded-3 border shadow-sm">
+        <i class="bi bi-people fs-2 text-primary"></i>
+        <div class="text-start">
+          <div class="fw-bold fs-4 text-dark">{{ students|length }}</div>
+          <div class="small text-muted">Enrolled Students</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Roster & Exams Split View -->
 <div class="row g-4">
+  <!-- Students Roster Column -->
   <div class="col-lg-6">
-    <h5 class="mb-2">Students ({{ students|length }})</h5>
-    <div class="card">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h5 class="fw-bold mb-0 text-dark">
+        <i class="bi bi-mortarboard me-2 text-primary"></i>Enrolled Students ({{ students|length }})
+      </h5>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
       <ul class="list-group list-group-flush">
         {% for e in students %}
-          <li class="list-group-item">{{ e.student.display_name }} <span class="text-muted small">&middot; {{ e.student.username }}</span></li>
+          <li class="list-group-item p-3 d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-3">
+              <div class="rounded-circle bg-light text-primary fw-bold d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                {{ e.student.username|slice:":1"|upper }}
+              </div>
+              <div>
+                <div class="fw-bold text-dark">{{ e.student.display_name }}</div>
+                <div class="small text-muted">@{{ e.student.username }} &middot; {{ e.student.email|default:"" }}</div>
+              </div>
+            </div>
+            <span class="small text-muted">{{ e.joined_at|date:"d M Y" }}</span>
+          </li>
         {% empty %}
-          <li class="list-group-item text-muted">No students yet. Share the code above.</li>
+          <li class="list-group-item p-4 text-center text-muted">
+            <i class="bi bi-people fs-3 d-block mb-2 text-muted"></i>
+            No students enrolled yet. Share the code <code>{{ classroom.code }}</code> to invite students.
+          </li>
         {% endfor %}
       </ul>
     </div>
   </div>
+
+  <!-- Exams for this Class Column -->
   <div class="col-lg-6">
-    <h5 class="mb-2">Exams for this class</h5>
-    <div class="card">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h5 class="fw-bold mb-0 text-dark">
+        <i class="bi bi-journal-text me-2 text-primary"></i>Class Examinations ({{ exams|length }})
+      </h5>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
       <ul class="list-group list-group-flush">
         {% for exam in exams %}
-          <li class="list-group-item d-flex justify-content-between">
-            <a class="text-decoration-none" href="{% url 'exam_detail' exam.pk %}">{{ exam.title }}</a>
-            <span class="small text-muted">{{ exam.start_time|date:"d M" }}</span>
+          <li class="list-group-item p-3 d-flex justify-content-between align-items-center">
+            <div>
+              <a class="fw-bold text-dark text-decoration-none" href="{% url 'exam_detail' exam.pk %}">
+                {{ exam.title }}
+              </a>
+              <div class="small text-muted">
+                {{ exam.subject }} &middot; {{ exam.duration_minutes }} min &middot; {{ exam.start_time|date:"d M Y, H:i" }}
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              {% if exam.is_published %}
+                <span class="badge-soft soft-green">Published</span>
+              {% else %}
+                <span class="badge-soft soft-gray">Draft</span>
+              {% endif %}
+              <a class="btn btn-sm btn-light border" href="{% url 'exam_detail' exam.pk %}">
+                <i class="bi bi-arrow-right"></i>
+              </a>
+            </div>
           </li>
         {% empty %}
-          <li class="list-group-item text-muted">No exam assigned to this class yet.</li>
+          <li class="list-group-item p-4 text-center text-muted">
+            <i class="bi bi-journal-plus fs-3 d-block mb-2 text-muted"></i>
+            No examinations currently assigned exclusively to this class.
+          </li>
         {% endfor %}
       </ul>
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyCode(code, btn) {
+  navigator.clipboard.writeText(code).then(() => {
+    btn.innerHTML = '<i class="bi bi-check2 text-success me-1"></i> Copied!';
+    setTimeout(() => {
+      btn.innerHTML = '<i class="bi bi-clipboard me-1"></i> Copy Code';
+    }, 2000);
+  });
+}
+</script>
 {% endblock %}

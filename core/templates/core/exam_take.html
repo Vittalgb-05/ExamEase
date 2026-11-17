@@ -1,73 +1,290 @@
 {% extends "core/base.html" %}
-{% block title %}{{ exam.title }} · In progress{% endblock %}
+{% load static %}
+{% block title %}{{ exam.title }} · Examination in Progress · ExamEase{% endblock %}
+
 {% block head %}
 <style>
-  .timer-bar { position: sticky; top: 56px; z-index: 20; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: .6rem 1rem; box-shadow: 0 4px 12px rgba(15,23,42,.06); }
-  #timer { font-variant-numeric: tabular-nums; font-size: 1.6rem; font-weight: 700; color: var(--brand); }
-  #timer.warn { color: #d97706; }
-  #timer.danger { color: #dc2626; animation: pulse 1s infinite; }
-  @keyframes pulse { 50% { opacity: .55; } }
-  .q-card { scroll-margin-top: 140px; }
-  .option { display: flex; gap: .65rem; align-items: flex-start; padding: .7rem .9rem; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; margin-bottom: .5rem; transition: .12s; }
-  .option:hover { border-color: var(--brand); background: #f5f5ff; }
-  .option input { margin-top: .3rem; }
-  .option:has(input:checked) { border-color: var(--brand); background: #eef2ff; }
-  .nav-dot { width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid var(--line); background: #fff; color: var(--ink); text-decoration: none; font-weight: 600; font-size: .85rem; }
-  .nav-dot.done { background: var(--brand); border-color: var(--brand); color: #fff; }
-  .side { position: sticky; top: 150px; }
+  .exam-timer-bar {
+    position: sticky;
+    top: 65px;
+    z-index: 1020;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--slate-200);
+    border-radius: 14px;
+    padding: 0.75rem 1.25rem;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  }
+
+  .exam-timer-digits {
+    font-variant-numeric: tabular-nums;
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--brand-blue);
+    line-height: 1;
+  }
+  .exam-timer-digits.warn { color: #d97706; }
+  .exam-timer-digits.danger { color: #dc2626; animation: timer-pulse 1s infinite; }
+  @keyframes timer-pulse { 50% { opacity: 0.45; } }
+
+  .q-anchor-card {
+    scroll-margin-top: 170px;
+    border: 1px solid var(--slate-200);
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.15s ease;
+  }
+
+  .q-option-label {
+    display: flex;
+    gap: 0.85rem;
+    align-items: flex-start;
+    padding: 0.85rem 1.15rem;
+    border: 1.5px solid var(--slate-200);
+    border-radius: 12px;
+    cursor: pointer;
+    margin-bottom: 0.6rem;
+    background: #ffffff;
+    transition: all 0.12s ease;
+  }
+
+  .q-option-label:hover {
+    border-color: var(--brand-blue);
+    background: #f8fafc;
+  }
+
+  .q-option-label:has(input:checked) {
+    border-color: var(--brand-blue);
+    background: #eff6ff;
+    box-shadow: 0 0 0 1px var(--brand-blue);
+  }
+
+  .q-option-label input[type="radio"] {
+    margin-top: 0.25rem;
+    flex-shrink: 0;
+  }
+
+  .nav-dot-btn {
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    border: 1.5px solid var(--slate-200);
+    background: #ffffff;
+    color: var(--slate-700);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.85rem;
+    position: relative;
+    transition: all 0.12s ease;
+  }
+
+  .nav-dot-btn:hover {
+    border-color: var(--brand-blue);
+    color: var(--brand-blue);
+    background: #f8fafc;
+  }
+
+  .nav-dot-btn.done {
+    background: var(--brand-blue);
+    border-color: var(--brand-blue);
+    color: #ffffff;
+  }
+
+  .nav-dot-btn.flagged-dot::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 8px;
+    height: 8px;
+    background-color: #f59e0b;
+    border-radius: 50%;
+    border: 1.5px solid #ffffff;
+  }
+
+  .side-palette-card {
+    position: sticky;
+    top: 175px;
+    border-radius: 14px;
+    background: #ffffff;
+    border: 1px solid var(--slate-200);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-flag-toggle {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 8px;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="timer-bar d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-  <div>
-    <div class="fw-semibold">{{ exam.title }}</div>
-    <div class="small text-muted"><span id="progress">{{ answered }}</span> of {{ questions|length }} answered &middot; <span id="saveStatus" class="text-muted">Auto-save on</span></div>
+<!-- Top Sticky Timer & Progress Bar -->
+<div class="exam-timer-bar d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+  <div class="d-flex align-items-center gap-3">
+    <div>
+      <div class="fw-bold text-dark fs-6">{{ exam.title }}</div>
+      <div class="small text-muted d-flex align-items-center gap-2">
+        <span><span id="progressCount" class="fw-bold text-primary">{{ answered }}</span> of {{ questions|length }} answered</span>
+        <span>&middot;</span>
+        <span id="saveStatus" class="badge-soft soft-green py-0 px-2"><i class="bi bi-cloud-check"></i> Auto-save ready</span>
+      </div>
+    </div>
   </div>
-  <div class="text-end">
-    <div class="small text-muted text-uppercase" style="letter-spacing:.05em">Time left</div>
-    <div id="timer">--:--</div>
+
+  <div class="text-end d-flex align-items-center gap-3">
+    <!-- Progress Indicator Mini Bar -->
+    <div class="d-none d-md-block text-end" style="width: 140px;">
+      <div class="small text-muted mb-1" style="font-size: 0.75rem;">Completion</div>
+      <div class="progress" style="height: 6px;">
+        <div id="progressBar" class="progress-bar bg-primary" role="progressbar" style="width: {% widthratio answered questions|length 100 %}%;"></div>
+      </div>
+    </div>
+
+    <!-- Timer Digits -->
+    <div class="ps-3 border-start">
+      <div class="small text-muted text-uppercase fw-semibold" style="letter-spacing: .05em; font-size: 0.7rem;">Time Remaining</div>
+      <div id="timer" class="exam-timer-digits">--:--</div>
+    </div>
   </div>
 </div>
 
-<div id="tabWarn" class="alert alert-warning d-none mb-3" role="alert">
-  You left the exam page. This was recorded and your teacher can see it.
+<!-- Tab Switch Warning Alert -->
+<div id="tabWarn" class="alert alert-warning d-none mb-3 shadow-sm" role="alert">
+  <i class="bi bi-exclamation-triangle-fill fs-5 me-2"></i>
+  <span id="tabWarnText">You navigated away from the exam tab. This telemetry was recorded for your educator.</span>
 </div>
 
-<div class="row g-3">
+<!-- Main Question Area & Sidebar Palette -->
+<div class="row g-4">
+  <!-- Questions Column -->
   <div class="col-lg-9">
     <form id="examForm" method="post" action="{% url 'attempt_submit' attempt.pk %}">
       {% csrf_token %}
+
       {% for q in questions %}
-      <div class="card q-card mb-3" id="q-{{ q.pk }}">
-        <div class="card-body">
-          <div class="d-flex justify-content-between mb-2">
-            <span class="badge-soft soft-blue">Question {{ forloop.counter }}</span>
-            <span class="small text-muted">{{ q.marks }} mark{{ q.marks|pluralize }}</span>
+        <div class="q-anchor-card p-4 mb-4" id="q-{{ q.pk }}">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-primary px-3 py-1 rounded-pill">Question {{ forloop.counter }}</span>
+              <span class="badge-soft soft-blue">{{ q.topic }}</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <span class="small text-muted fw-semibold">{{ q.marks }} mark{{ q.marks|pluralize }}</span>
+              <button type="button" class="btn btn-sm btn-outline-secondary btn-flag-toggle" onclick="toggleFlag('{{ q.pk }}', this)">
+                <i class="bi bi-flag"></i> Flag
+              </button>
+            </div>
           </div>
-          <p class="fs-6 fw-semibold" style="white-space: pre-line">{{ q.text }}</p>
-          {% for c in q.options %}
-          <label class="option">
-            <input class="form-check-input" type="radio" name="q_{{ q.pk }}" value="{{ c.pk }}" {% if q.selected == c.pk %}checked{% endif %}>
-            <span>{{ c.text }}</span>
-          </label>
-          {% endfor %}
+
+          <p class="fs-6 fw-bold text-dark mb-3" style="white-space: pre-line;">{{ q.text }}</p>
+
+          <div class="options-group">
+            {% for c in q.options %}
+              <label class="q-option-label" for="choice-{{ c.pk }}">
+                <input class="form-check-input" type="radio" name="q_{{ q.pk }}" id="choice-{{ c.pk }}" value="{{ c.pk }}" {% if q.selected == c.pk %}checked{% endif %}>
+                <span class="text-slate-800">{{ c.text }}</span>
+              </label>
+            {% endfor %}
+          </div>
         </div>
-      </div>
       {% endfor %}
-      <button id="submitBtn" type="submit" class="btn btn-brand btn-lg w-100 mb-4"><i class="bi bi-send"></i> Submit exam</button>
+
+      <!-- Submit Exam Button -->
+      <div class="card p-4 shadow-sm border-0 rounded-4 text-center mb-5">
+        <h5 class="fw-bold mb-2">Ready to complete your examination?</h5>
+        <p class="small text-muted mb-3">Review your answers using the question palette before submitting.</p>
+        <button id="preSubmitBtn" type="button" class="btn btn-brand btn-lg py-3 fw-bold" onclick="openSubmitModal()">
+          <i class="bi bi-send-check me-2"></i> Submit Examination
+        </button>
+      </div>
     </form>
   </div>
 
-  <div class="col-lg-3 d-none d-lg-block">
-    <div class="card side p-3">
-      <div class="fw-semibold mb-2">Questions</div>
-      <div class="d-flex flex-wrap gap-2">
+  <!-- Question Palette Sidebar Column -->
+  <div class="col-lg-3">
+    <div class="side-palette-card p-3">
+      <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+        <span class="fw-bold text-dark"><i class="bi bi-grid-3x3-gap me-1 text-primary"></i> Question Palette</span>
+        <span class="badge bg-light text-dark border">{{ questions|length }} total</span>
+      </div>
+
+      <div class="d-flex flex-wrap gap-2 mb-3">
         {% for q in questions %}
-          <a href="#q-{{ q.pk }}" id="nav-{{ q.pk }}" class="nav-dot {% if q.selected %}done{% endif %}">{{ forloop.counter }}</a>
+          <a href="#q-{{ q.pk }}" id="nav-{{ q.pk }}" class="nav-dot-btn {% if q.selected %}done{% endif %}">
+            {{ forloop.counter }}
+          </a>
         {% endfor %}
       </div>
-      <div class="small text-muted mt-3"><span class="nav-dot done" style="width:14px;height:14px;border-radius:4px"></span> answered</div>
+
+      <!-- Legend -->
+      <div class="border-top pt-2 small text-muted">
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span class="nav-dot-btn done" style="width:16px;height:16px;border-radius:4px;"></span>
+          <span>Answered</span>
+        </div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span class="nav-dot-btn" style="width:16px;height:16px;border-radius:4px;"></span>
+          <span>Unanswered</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="nav-dot-btn flagged-dot" style="width:16px;height:16px;border-radius:4px;border-color:#f59e0b;"></span>
+          <span>Flagged for Review</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Submit Confirmation Modal -->
+<div class="modal fade" id="submitConfirmModal" tabindex="-1" aria-labelledby="submitModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header border-bottom-0 pb-0">
+        <h5 class="modal-title fw-bold" id="submitModalLabel">Submit Examination</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body py-4">
+        <div class="row g-2 text-center mb-3">
+          <div class="col-4">
+            <div class="p-2 rounded-3 bg-light border">
+              <div id="modalAnswered" class="fw-bold fs-4 text-success">0</div>
+              <div class="small text-muted">Answered</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="p-2 rounded-3 bg-light border">
+              <div id="modalUnanswered" class="fw-bold fs-4 text-danger">0</div>
+              <div class="small text-muted">Unanswered</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="p-2 rounded-3 bg-light border">
+              <div id="modalFlagged" class="fw-bold fs-4 text-warning">0</div>
+              <div class="small text-muted">Flagged</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="modalWarningMessage" class="alert alert-warning small d-none">
+          <i class="bi bi-exclamation-triangle-fill me-1"></i> You still have unanswered questions. Are you sure you want to proceed?
+        </div>
+
+        <p class="small text-muted mb-0">
+          Once submitted, your answers will be locked and graded instantly. You cannot return or edit your answers.
+        </p>
+      </div>
+      <div class="modal-footer border-top-0 pt-0">
+        <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Keep Working</button>
+        <button type="button" class="btn btn-brand" id="modalFinalSubmitBtn" onclick="doFinalSubmit()">
+          Confirm & Submit Now
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -79,15 +296,38 @@
   const form = document.getElementById('examForm');
   const timerEl = document.getElementById('timer');
   const statusEl = document.getElementById('saveStatus');
-  const progressEl = document.getElementById('progress');
+  const progressCountEl = document.getElementById('progressCount');
+  const progressBarEl = document.getElementById('progressBar');
   const saveUrl = "{% url 'attempt_save' attempt.pk %}";
   const eventUrl = "{% url 'attempt_event' attempt.pk %}";
   const tabWarn = document.getElementById('tabWarn');
+  const tabWarnText = document.getElementById('tabWarnText');
   let tabSwitches = {{ tab_switches }};
   const csrf = form.querySelector('[name=csrfmiddlewaretoken]').value;
-  const total = {{ questions|length }};
+  const totalQuestions = {{ questions|length }};
   let endAt = performance.now() + {{ remaining }} * 1000;
   let submitting = false;
+  const flaggedQuestions = new Set();
+  const flagStorageKey = 'examease_attempt_{{ attempt.pk }}_flags';
+
+  // Restore flagged questions from localStorage if available
+  try {
+    const savedFlags = JSON.parse(localStorage.getItem(flagStorageKey) || '[]');
+    savedFlags.forEach(qid => {
+      flaggedQuestions.add(String(qid));
+      const dot = document.getElementById('nav-' + qid);
+      if (dot) dot.classList.add('flagged-dot');
+      const card = document.getElementById('q-' + qid);
+      if (card) {
+        const btn = card.querySelector('.btn-flag-toggle');
+        if (btn) {
+          btn.classList.remove('btn-outline-secondary');
+          btn.classList.add('btn-warning');
+          btn.innerHTML = '<i class="bi bi-flag-fill"></i> Flagged';
+        }
+      }
+    });
+  } catch (e) {}
 
   function fmt(s) {
     const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
@@ -99,8 +339,10 @@
     if (submitting) return;
     submitting = true;
     window.onbeforeunload = null;
-    document.getElementById('submitBtn').disabled = true;
-    statusEl.textContent = 'Submitting...';
+    try { localStorage.removeItem(flagStorageKey); } catch (e) {}
+    const btn = document.getElementById('preSubmitBtn');
+    if (btn) btn.disabled = true;
+    statusEl.innerHTML = '<i class="bi bi-hourglass-split"></i> Submitting...';
     form.submit();
   }
 
@@ -120,8 +362,18 @@
     return names.size;
   }
 
+  function updateProgress() {
+    const answeredCount = countAnswered();
+    if (progressCountEl) progressCountEl.textContent = answeredCount;
+    if (progressBarEl) {
+      const pct = Math.round((answeredCount / totalQuestions) * 100);
+      progressBarEl.style.width = pct + '%';
+    }
+  }
+
   async function save(qid, cid) {
-    statusEl.textContent = 'Saving...';
+    statusEl.className = 'badge-soft soft-amber py-0 px-2';
+    statusEl.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Saving...';
     try {
       const res = await fetch(saveUrl, {
         method: 'POST',
@@ -130,13 +382,19 @@
         body: new URLSearchParams({ question: qid, choice: cid })
       });
       if (res.status === 403) { submitNow(); return; }
-      if (res.status === 400) { statusEl.textContent = 'Could not save this answer. Please try again.'; return; }
+      if (res.status === 400) {
+        statusEl.className = 'badge-soft soft-red py-0 px-2';
+        statusEl.innerHTML = '<i class="bi bi-x-circle"></i> Save error';
+        return;
+      }
       if (!res.ok) throw new Error('save failed');
       const json = await res.json();
-      endAt = performance.now() + json.remaining * 1000;   // stay in sync with the server clock
-      statusEl.textContent = 'Saved ✓';
+      endAt = performance.now() + json.remaining * 1000;
+      statusEl.className = 'badge-soft soft-green py-0 px-2';
+      statusEl.innerHTML = '<i class="bi bi-cloud-check"></i> Saved ✓';
     } catch (e) {
-      statusEl.textContent = 'Offline: your answer will be sent when you submit';
+      statusEl.className = 'badge-soft soft-amber py-0 px-2';
+      statusEl.innerHTML = '<i class="bi bi-cloud-slash"></i> Offline (saved on submit)';
     }
   }
 
@@ -145,26 +403,66 @@
     const qid = e.target.name.slice(2);
     const dot = document.getElementById('nav-' + qid);
     if (dot) dot.classList.add('done');
-    progressEl.textContent = countAnswered();
+    updateProgress();
     save(qid, e.target.value);
   });
 
+  window.toggleFlag = function (qid, btn) {
+    const dot = document.getElementById('nav-' + qid);
+    if (flaggedQuestions.has(String(qid))) {
+      flaggedQuestions.delete(String(qid));
+      if (dot) dot.classList.remove('flagged-dot');
+      btn.classList.remove('btn-warning');
+      btn.classList.add('btn-outline-secondary');
+      btn.innerHTML = '<i class="bi bi-flag"></i> Flag';
+    } else {
+      flaggedQuestions.add(String(qid));
+      if (dot) dot.classList.add('flagged-dot');
+      btn.classList.remove('btn-outline-secondary');
+      btn.classList.add('btn-warning');
+      btn.innerHTML = '<i class="bi bi-flag-fill"></i> Flagged';
+    }
+    try {
+      localStorage.setItem(flagStorageKey, JSON.stringify([...flaggedQuestions]));
+    } catch (e) {}
+  };
+
+  window.openSubmitModal = function () {
+    const answeredCount = countAnswered();
+    const unansweredCount = totalQuestions - answeredCount;
+    const flaggedCount = flaggedQuestions.size;
+
+    document.getElementById('modalAnswered').textContent = answeredCount;
+    document.getElementById('modalUnanswered').textContent = unansweredCount;
+    document.getElementById('modalFlagged').textContent = flaggedCount;
+
+    const warnEl = document.getElementById('modalWarningMessage');
+    if (unansweredCount > 0) {
+      warnEl.classList.remove('d-none');
+    } else {
+      warnEl.classList.add('d-none');
+    }
+
+    const modal = new bootstrap.Modal(document.getElementById('submitConfirmModal'));
+    modal.show();
+  };
+
+  window.doFinalSubmit = function () {
+    submitNow();
+  };
+
   form.addEventListener('submit', function (e) {
-    if (submitting) return;
-    const missing = total - countAnswered();
-    const msg = missing
-      ? 'You have ' + missing + ' unanswered question' + (missing > 1 ? 's' : '') + '. Submit anyway?'
-      : 'Submit your exam now? You cannot change answers afterwards.';
-    if (!confirm(msg)) { e.preventDefault(); return; }
-    submitting = true;
-    window.onbeforeunload = null;
+    if (!submitting) {
+      e.preventDefault();
+      openSubmitModal();
+    }
   });
 
   document.addEventListener('visibilitychange', function () {
     if (!document.hidden || submitting) return;
     tabSwitches += 1;
     tabWarn.classList.remove('d-none');
-    tabWarn.textContent = 'You left the exam page ' + tabSwitches + ' time' + (tabSwitches > 1 ? 's' : '') + '. This was recorded and your teacher can see it.';
+    tabWarnText.textContent = 'You left the exam window ' + tabSwitches + ' time' + (tabSwitches > 1 ? 's' : '') + '. This telemetry was recorded.';
     fetch(eventUrl, {
       method: 'POST',
       credentials: 'same-origin',
@@ -173,7 +471,9 @@
     }).catch(function () {});
   });
 
-  window.onbeforeunload = function () { if (!submitting) return 'Your exam is still running.'; };
+  window.onbeforeunload = function () {
+    if (!submitting) return 'Your exam is currently in progress. Exiting will not stop the timer.';
+  };
 })();
 </script>
 {% endblock %}

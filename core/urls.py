@@ -1,8 +1,8 @@
 from django.contrib.auth import views as auth_views
-from django.urls import path
+from django.urls import path, reverse_lazy
 
 from . import views
-from .forms import LoginForm
+from .forms import LoginForm, StyledPasswordChangeForm
 
 urlpatterns = [
     path("", views.home, name="home"),
@@ -10,9 +10,28 @@ urlpatterns = [
     path("login/", auth_views.LoginView.as_view(authentication_form=LoginForm), name="login"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
     path("dashboard/", views.dashboard, name="dashboard"),
+    path("profile/", views.user_profile, name="profile"),
+    path(
+        "password-change/",
+        auth_views.PasswordChangeView.as_view(
+            form_class=StyledPasswordChangeForm,
+            template_name="core/password_change.html",
+            success_url=reverse_lazy("password_change_done"),
+        ),
+        name="password_change",
+    ),
+    path(
+        "password-change/done/",
+        auth_views.PasswordChangeDoneView.as_view(template_name="core/password_change_done.html"),
+        name="password_change_done",
+    ),
     path("classes/", views.class_list, name="class_list"),
     path("classes/new/", views.class_create, name="class_create"),
     path("classes/<int:pk>/", views.class_detail, name="class_detail"),
+    path("classes/<int:pk>/edit/", views.class_edit, name="class_edit"),
+    path("classes/<int:pk>/delete/", views.class_delete, name="class_delete"),
+    path("classes/<int:pk>/regenerate-code/", views.class_regenerate_code, name="class_regenerate_code"),
+    path("classes/<int:pk>/leave/", views.class_leave, name="class_leave"),
     path("classes/join/", views.class_join, name="class_join"),
     # teacher
     path("exams/new/", views.exam_create, name="exam_create"),

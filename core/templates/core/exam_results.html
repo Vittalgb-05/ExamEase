@@ -1,43 +1,171 @@
 {% extends "core/base.html" %}
-{% block title %}Results · {{ exam.title }}{% endblock %}
+{% load static %}
+{% block title %}Submissions & Results · {{ exam.title }} · ExamEase{% endblock %}
+
 {% block content %}
-<a href="{% url 'exam_detail' exam.pk %}" class="text-decoration-none small"><i class="bi bi-arrow-left"></i> {{ exam.title }}</a>
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 mt-1">
-  <h2 class="page-title mb-0">Results</h2>
-  <div class="d-flex gap-2">
-    <a class="btn btn-light border" href="{% url 'exam_analytics' exam.pk %}"><i class="bi bi-bar-chart"></i> Analytics</a>
-    <a class="btn btn-brand" href="{% url 'exam_results_csv' exam.pk %}"><i class="bi bi-download"></i> Download CSV</a>
+<div class="mb-3">
+  <a href="{% url 'exam_detail' exam.pk %}" class="btn btn-sm btn-light border text-muted">
+    <i class="bi bi-arrow-left me-1"></i> Back to {{ exam.title }}
+  </a>
+</div>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+  <div>
+    <h2 class="page-title mb-1">Student Results & Leaderboard</h2>
+    <div class="page-subtitle">Submissions for <strong class="text-dark">{{ exam.title }}</strong> &middot; Pass Mark: {{ exam.pass_percent }}%</div>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-sm btn-light border" href="{% url 'exam_analytics' exam.pk %}">
+      <i class="bi bi-bar-chart me-1 text-primary"></i> View Analytics
+    </a>
+    <a class="btn btn-sm btn-brand shadow-sm" href="{% url 'exam_results_csv' exam.pk %}">
+      <i class="bi bi-download me-1"></i> Download CSV Export
+    </a>
   </div>
 </div>
 
-<div class="small text-muted mb-2">Tab switches count how often the student left the exam tab. It is a warning sign for you to review, not proof of cheating.</div>
 {% if in_progress %}
-<div class="alert alert-info">{{ in_progress }} student{{ in_progress|pluralize }} still taking the exam. They appear here once submitted.</div>
+  <div class="alert alert-info shadow-sm mb-4">
+    <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+    <div>{{ in_progress }} student{{ in_progress|pluralize }} currently taking this examination. Their scores will update automatically upon submission or timer expiration.</div>
+  </div>
 {% endif %}
 
-<div class="card">
+<!-- Search & Status Filter Bar -->
+<div class="card p-3 mb-4 shadow-sm border-0">
+  <form method="get" class="row g-2 align-items-center">
+    <div class="col-md-5">
+      <div class="input-group">
+        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+        <input type="text" name="q" class="form-control border-start-0 ps-0" placeholder="Filter by student name or username..." value="{{ search_query }}">
+      </div>
+    </div>
+    <div class="col-md-4 d-flex gap-1">
+      <a href="{% url 'exam_results' exam.pk %}{% if search_query %}?q={{ search_query }}{% endif %}" class="btn btn-sm {% if not status_filter %}btn-brand{% else %}btn-light border{% endif %}">
+        All ({{ total_submitted }})
+      </a>
+      <a href="{% url 'exam_results' exam.pk %}?status=pass{% if search_query %}&q={{ search_query }}{% endif %}" class="btn btn-sm {% if status_filter == 'pass' %}btn-brand{% else %}btn-light border{% endif %}">
+        Passed
+      </a>
+      <a href="{% url 'exam_results' exam.pk %}?status=fail{% if search_query %}&q={{ search_query }}{% endif %}" class="btn btn-sm {% if status_filter == 'fail' %}btn-brand{% else %}btn-light border{% endif %}">
+        Failed
+      </a>
+    </div>
+    <div class="col-md-3 text-md-end">
+      {% if search_query or status_filter %}
+        <a href="{% url 'exam_results' exam.pk %}" class="btn btn-sm btn-outline-secondary">Clear Filter</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- Results Table -->
+{% if attempts %}
+<div class="card shadow-sm border-0 rounded-4 overflow-hidden mb-4">
   <div class="table-responsive">
-    <table class="table align-middle mb-0">
+    <table class="table table-hover align-middle mb-0">
       <thead class="table-light">
-        <tr><th>#</th><th>Student</th><th>Score</th><th>Percent</th><th>Result</th><th>Time taken</th><th>Tab switches</th><th>Submitted</th></tr>
+        <tr>
+          <th style="width: 60px;">Rank</th>
+          <th>Student</th>
+          <th>Score</th>
+          <th>Percentage</th>
+          <th>Result</th>
+          <th>Time Taken</th>
+          <th class="text-center">Tab Switches</th>
+          <th>Submitted At</th>
+          <th class="text-end pe-4">Actions</th>
+        </tr>
       </thead>
       <tbody>
       {% for a in attempts %}
         <tr>
-          <td>{{ forloop.counter }}</td>
-          <td><span class="fw-semibold">{{ a.student.display_name }}</span><div class="small text-muted">{{ a.student.username }}</div></td>
-          <td>{{ a.score }} / {{ a.total }}</td>
-          <td>{{ a.percent }}%</td>
-          <td>{% if a.passed %}<span class="badge-soft soft-green">Pass</span>{% else %}<span class="badge-soft soft-red">Fail</span>{% endif %}</td>
-          <td>{{ a.minutes_taken }} min</td>
-          <td>{% if a.tab_switches %}<span class="badge-soft soft-amber">{{ a.tab_switches }}</span>{% else %}<span class="text-muted">0</span>{% endif %}</td>
-          <td class="small">{{ a.submitted_at|date:"d M, H:i" }}</td>
+          <td>
+            {% if forloop.counter == 1 %}
+              <span class="badge bg-warning text-dark rounded-circle p-2" style="width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;">🥇</span>
+            {% elif forloop.counter == 2 %}
+              <span class="badge bg-secondary text-white rounded-circle p-2" style="width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;">🥈</span>
+            {% elif forloop.counter == 3 %}
+              <span class="badge bg-danger-subtle text-danger rounded-circle p-2" style="width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;">🥉</span>
+            {% else %}
+              <span class="text-muted fw-semibold ps-2">{{ forloop.counter }}</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="rounded-circle bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center" style="width:34px;height:34px;font-size:0.8rem;">
+                {{ a.student.username|slice:":1"|upper }}
+              </div>
+              <div>
+                <div class="fw-bold text-dark">{{ a.student.display_name }}</div>
+                <div class="small text-muted">@{{ a.student.username }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="fw-bold text-dark">{{ a.score }}</span> / {{ a.total }}
+          </td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <span class="fw-bold">{{ a.percent }}%</span>
+              <div class="progress" style="height: 6px; width: 60px;">
+                <div class="progress-bar {% if a.passed %}bg-success{% else %}bg-danger{% endif %}" role="progressbar" style="width: {{ a.percent }}%;"></div>
+              </div>
+            </div>
+          </td>
+          <td>
+            {% if a.passed %}
+              <span class="badge-soft soft-green"><i class="bi bi-check-circle-fill"></i> Pass</span>
+            {% else %}
+              <span class="badge-soft soft-red"><i class="bi bi-x-circle-fill"></i> Fail</span>
+            {% endif %}
+          </td>
+          <td class="small text-muted">
+            <i class="bi bi-stopwatch me-1"></i> {{ a.minutes_taken }} min
+          </td>
+          <td class="text-center">
+            {% if a.tab_switches %}
+              <span class="badge-soft soft-amber" title="Student left exam window {{ a.tab_switches }} times">
+                <i class="bi bi-exclamation-triangle"></i> {{ a.tab_switches }}
+              </span>
+            {% else %}
+              <span class="badge-soft soft-green"><i class="bi bi-check2"></i> 0</span>
+            {% endif %}
+          </td>
+          <td class="small text-muted">
+            {{ a.submitted_at|date:"d M Y, H:i" }}
+          </td>
+          <td class="text-end pe-4 text-nowrap">
+            <a class="btn btn-sm btn-outline-brand" href="{% url 'attempt_result' a.pk %}">
+              <i class="bi bi-eye me-1"></i> Review Answers
+            </a>
+          </td>
         </tr>
-      {% empty %}
-        <tr><td colspan="8" class="text-center text-muted p-4">No submissions yet.</td></tr>
       {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
+{% else %}
+  <div class="card p-5 text-center shadow-sm border-0 rounded-4">
+    <div class="empty-state">
+      <div class="empty-state-icon">
+        <i class="bi bi-clipboard-x"></i>
+      </div>
+      <h4 class="empty-state-title">
+        {% if search_query or status_filter %}No matching student submissions{% else %}No submissions yet{% endif %}
+      </h4>
+      <p class="empty-state-desc">
+        {% if search_query or status_filter %}
+          No student records matched your search or status criteria.
+        {% else %}
+          Student results will appear here as soon as students finish taking this exam.
+        {% endif %}
+      </p>
+      {% if search_query or status_filter %}
+        <a href="{% url 'exam_results' exam.pk %}" class="btn btn-outline-brand">Clear Filters</a>
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
 {% endblock %}

@@ -1,16 +1,36 @@
 {% extends "core/base.html" %}
-{% block title %}New class · Online Exam System{% endblock %}
+{% load static %}
+{% block title %}{{ title|default:"Create Class" }} · ExamEase{% endblock %}
+
 {% block content %}
+<div class="mb-3">
+  <a href="{% if classroom %}{% url 'class_detail' classroom.pk %}{% else %}{% url 'class_list' %}{% endif %}" class="btn btn-sm btn-light border text-muted">
+    <i class="bi bi-arrow-left me-1"></i> Back to Classes
+  </a>
+</div>
+
 <div class="row justify-content-center">
   <div class="col-lg-6">
-    <div class="card p-4">
-      <h3 class="page-title mb-3">New class</h3>
+    <div class="card p-4 p-sm-5 shadow-sm border-0 rounded-4">
+      <div class="d-flex align-items-center gap-3 mb-4">
+        <div class="rounded-circle bg-primary-subtle text-primary p-3 d-inline-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+          <i class="bi bi-building-add fs-4"></i>
+        </div>
+        <div>
+          <h3 class="fw-bold mb-0">{{ title|default:"Create New Class" }}</h3>
+          <div class="text-muted small">{% if classroom %}Update class information for your student cohort.{% else %}A unique 6-character join code will be generated automatically.{% endif %}</div>
+        </div>
+      </div>
+
       <form method="post" novalidate>
         {% csrf_token %}
         {% include "core/_form_fields.html" %}
-        <div class="d-flex gap-2">
-          <button class="btn btn-brand" type="submit">Create class</button>
-          <a class="btn btn-light border" href="{% url 'class_list' %}">Cancel</a>
+
+        <div class="d-flex justify-content-end gap-2 mt-4 pt-2 border-top">
+          <a class="btn btn-light border" href="{% if classroom %}{% url 'class_detail' classroom.pk %}{% else %}{% url 'class_list' %}{% endif %}">Cancel</a>
+          <button class="btn btn-brand" type="submit">
+            <i class="bi bi-check2-circle me-1"></i> {% if classroom %}Save Changes{% else %}Create Class{% endif %}
+          </button>
         </div>
       </form>
     </div>

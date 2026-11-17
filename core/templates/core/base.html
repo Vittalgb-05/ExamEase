@@ -1,81 +1,183 @@
-<!doctype html>
+{% load static %}<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Online Exam System{% endblock %}</title>
+  <title>{% block title %}ExamEase · Smart Examinations. Simple Evaluation.{% endblock %}</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="{% static 'core/img/favicon.svg' %}">
+  <link rel="alternate icon" href="{% static 'core/img/favicon.svg' %}">
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-  <style>
-    :root {
-      --brand: #4f46e5;
-      --brand-dark: #3730a3;
-      --ink: #1e293b;
-      --muted: #64748b;
-      --line: #e2e8f0;
-      --bg: #f6f7fb;
-      color-scheme: light;
-    }
-    body { background: var(--bg); color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-    .navbar { background: #fff; border-bottom: 1px solid var(--line); }
-    .navbar-brand { font-weight: 700; color: var(--brand) !important; letter-spacing: -.01em; }
-    .btn-brand { background: var(--brand); border-color: var(--brand); color: #fff; }
-    .btn-brand:hover { background: var(--brand-dark); border-color: var(--brand-dark); color: #fff; }
-    .btn-outline-brand { border-color: var(--brand); color: var(--brand); }
-    .btn-outline-brand:hover { background: var(--brand); color: #fff; }
-    .card { border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
-    .card-header { background: transparent; border-bottom: 1px solid var(--line); font-weight: 600; }
-    .page-title { font-weight: 700; letter-spacing: -.02em; }
-    .stat { text-align: center; padding: 1rem .5rem; }
-    .stat .num { font-size: 1.8rem; font-weight: 700; line-height: 1.1; color: var(--brand); }
-    .stat .lbl { font-size: .8rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-    .badge-soft { padding: .4em .7em; border-radius: 999px; font-weight: 600; font-size: .75rem; }
-    .soft-green { background: #dcfce7; color: #166534; }
-    .soft-amber { background: #fef3c7; color: #92400e; }
-    .soft-red { background: #fee2e2; color: #991b1b; }
-    .soft-blue { background: #e0e7ff; color: #3730a3; }
-    .soft-gray { background: #e2e8f0; color: #334155; }
-    .table > :not(caption) > * > * { padding: .75rem .9rem; }
-    .hero { padding: 3rem 0 2rem; }
-    .hero h1 { font-weight: 800; letter-spacing: -.03em; font-size: clamp(2rem, 5vw, 3.2rem); }
-    .feature i { font-size: 1.6rem; color: var(--brand); }
-    footer { color: var(--muted); font-size: .85rem; }
-  </style>
+
+  <!-- ExamEase Custom Styles -->
+  <link href="{% static 'core/css/style.css' %}" rel="stylesheet">
   {% block head %}{% endblock %}
 </head>
 <body>
-<nav class="navbar navbar-expand-lg sticky-top">
+
+<!-- Navigation Bar -->
+<nav class="navbar navbar-expand-lg navbar-examease sticky-top">
   <div class="container">
-    <a class="navbar-brand" href="{% url 'home' %}"><i class="bi bi-mortarboard-fill me-1"></i>Online Exam System</a>
-    <div class="ms-auto d-flex align-items-center gap-2">
-      {% if user.is_authenticated %}
-        <span class="text-muted small d-none d-sm-inline">{{ user.display_name }}
-          <span class="badge-soft soft-blue ms-1">{{ user.get_role_display }}</span></span>
-        <a class="btn btn-sm btn-outline-brand" href="{% url 'dashboard' %}">Dashboard</a>
-        <form method="post" action="{% url 'logout' %}" class="d-inline">{% csrf_token %}
-          <button class="btn btn-sm btn-light border" type="submit">Log out</button>
-        </form>
-      {% else %}
-        <a class="btn btn-sm btn-outline-brand" href="{% url 'login' %}">Log in</a>
-        <a class="btn btn-sm btn-brand" href="{% url 'register' %}">Sign up</a>
-      {% endif %}
+    <a class="navbar-brand" href="{% if user.is_authenticated %}{% url 'dashboard' %}{% else %}{% url 'home' %}{% endif %}">
+      <img src="{% static 'core/img/logo.svg' %}" alt="ExamEase Logo" width="32" height="32" class="d-inline-block align-text-top">
+      <span>Exam<span class="brand-accent">Ease</span></span>
+    </a>
+
+    <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navContent" aria-controls="navContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navContent">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-3">
+        {% if user.is_authenticated %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'dashboard' %}">
+              <i class="bi bi-speedometer2 me-1"></i> Dashboard
+            </a>
+          </li>
+          {% if user.is_teacher %}
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'class_list' %}">
+                <i class="bi bi-people me-1"></i> My Classes
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'exam_create' %}">
+                <i class="bi bi-plus-circle me-1"></i> New Exam
+              </a>
+            </li>
+          {% endif %}
+        {% else %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'home' %}#features">Features</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'home' %}#how-it-works">How It Works</a>
+          </li>
+        {% endif %}
+      </ul>
+
+      <div class="d-flex align-items-center gap-2 mt-3 mt-lg-0">
+        {% if user.is_authenticated %}
+          <!-- User Dropdown Menu -->
+          <div class="dropdown">
+            <button class="btn btn-sm btn-light border dropdown-toggle d-flex align-items-center gap-2" type="button" id="userMenuBtn" data-bs-toggle="dropdown" aria-expanded="false">
+              <span class="rounded-circle bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center fw-bold" style="width:26px; height:26px; font-size:0.75rem;">
+                {{ user.username|slice:":1"|upper }}
+              </span>
+              <span class="fw-semibold text-truncate" style="max-width: 140px;">{{ user.display_name }}</span>
+              <span class="badge-soft {% if user.is_teacher %}soft-blue{% else %}soft-green{% endif %} ms-1 py-0 px-2" style="font-size: 0.7rem;">
+                {{ user.get_role_display }}
+              </span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 py-2" aria-labelledby="userMenuBtn" style="border-radius: 12px; min-width: 200px;">
+              <li class="px-3 py-1 mb-1 border-bottom">
+                <div class="fw-bold text-dark text-truncate">{{ user.display_name }}</div>
+                <div class="small text-muted text-truncate">{{ user.email|default:user.username }}</div>
+              </li>
+              <li>
+                <a class="dropdown-item py-2" href="{% url 'dashboard' %}">
+                  <i class="bi bi-speedometer2 me-2 text-muted"></i> Dashboard
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item py-2" href="{% url 'profile' %}">
+                  <i class="bi bi-person me-2 text-muted"></i> My Profile
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item py-2" href="{% url 'password_change' %}">
+                  <i class="bi bi-key me-2 text-muted"></i> Change Password
+                </a>
+              </li>
+              {% if user.is_staff %}
+                <li>
+                  <a class="dropdown-item py-2" href="{% url 'admin:index' %}">
+                    <i class="bi bi-shield-lock me-2 text-muted"></i> Admin Panel
+                  </a>
+                </li>
+              {% endif %}
+              <li><hr class="dropdown-divider my-1"></li>
+              <li>
+                <form method="post" action="{% url 'logout' %}" class="m-0">
+                  {% csrf_token %}
+                  <button class="dropdown-item py-2 text-danger" type="submit">
+                    <i class="bi bi-box-arrow-right me-2"></i> Log out
+                  </button>
+                </form>
+              </li>
+            </ul>
+          </div>
+        {% else %}
+          <a class="btn btn-sm btn-outline-brand" href="{% url 'login' %}">
+            <i class="bi bi-box-arrow-in-right me-1"></i> Log In
+          </a>
+          <a class="btn btn-sm btn-brand" href="{% url 'register' %}">
+            <i class="bi bi-person-plus me-1"></i> Get Started
+          </a>
+        {% endif %}
+      </div>
     </div>
   </div>
 </nav>
 
-<main class="container py-4">
-  {% for message in messages %}
-    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
-      {{ message }}
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+<!-- Main Page Content -->
+<main class="main-content container py-4">
+  {% if messages %}
+    <div class="messages-container mb-4">
+      {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %} alert-dismissible fade show shadow-sm" role="alert">
+          <div>
+            {% if message.tags == 'success' %}
+              <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+            {% elif message.tags == 'error' %}
+              <i class="bi bi-x-circle-fill me-2 fs-5"></i>
+            {% elif message.tags == 'warning' %}
+              <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+            {% else %}
+              <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+            {% endif %}
+          </div>
+          <div class="flex-grow-1 align-self-center">{{ message }}</div>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
     </div>
-  {% endfor %}
+  {% endif %}
+
   {% block content %}{% endblock %}
 </main>
 
-<footer class="container pb-4 mt-4 border-top pt-3">
-  <span>&copy; {% now "Y" %} Asibul Islam.</span>
+<!-- Footer -->
+<footer class="footer-examease mt-auto">
+  <div class="container">
+    <div class="row align-items-center gy-3">
+      <div class="col-md-6 text-center text-md-start">
+        <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-2 mb-1">
+          <img src="{% static 'core/img/logo.svg' %}" alt="ExamEase" width="22" height="22">
+          <span class="fw-bold text-dark">ExamEase</span>
+          <span class="text-muted small">&middot; Smart Examinations. Simple Evaluation.</span>
+        </div>
+        <div class="small text-muted">
+          Project Owner &amp; Developer: <strong>Vittal</strong> &middot; Based on open-source Online Exam System (MIT License).
+        </div>
+      </div>
+      <div class="col-md-6 text-center text-md-end">
+        <div class="small text-muted">
+          &copy; {% now "Y" %} ExamEase by Vittal. All rights reserved.
+        </div>
+      </div>
+    </div>
+  </div>
 </footer>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 {% block scripts %}{% endblock %}
 </body>

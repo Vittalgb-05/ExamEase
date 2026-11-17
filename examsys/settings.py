@@ -1,7 +1,7 @@
-"""Django settings for the Online Exam System.
+"""Django settings for ExamEase – Online Examination Management Platform.
 
-Everything that changes between your laptop and the live server is read from
-environment variables, so the same code runs in both places.
+Everything that changes between local development and production is read from
+environment variables, allowing the same codebase to run anywhere seamlessly.
 """
 import os
 import sys
@@ -20,8 +20,13 @@ if not SECRET_KEY:
     else:
         raise RuntimeError("Set the SECRET_KEY environment variable when DEBUG is False.")
 
-ALLOWED_HOSTS = [h.strip() for h in os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
-CSRF_TRUSTED_ORIGINS = []
+if DEBUG:
+    ALLOWED_HOSTS = ["*"]
+else:
+    ALLOWED_HOSTS = [h.strip() for h in os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()
+]
 
 # Render.com sets this variable automatically on the live server.
 RENDER_HOST = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
@@ -91,7 +96,7 @@ if "test" in sys.argv:
     PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
 LANGUAGE_CODE = "en-us"
-TIME_ZONE = "Asia/Dhaka"
+TIME_ZONE = os.environ.get("TIME_ZONE", "UTC")
 USE_I18N = True
 USE_TZ = True
 

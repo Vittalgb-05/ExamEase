@@ -1,34 +1,90 @@
 {% extends "core/base.html" %}
-{% block title %}{{ exam.title }} · Instructions{% endblock %}
-{% block content %}
-<div class="row justify-content-center">
-  <div class="col-lg-7">
-    <div class="card p-4">
-      <h3 class="page-title mb-1">{{ exam.title }}</h3>
-      <div class="text-muted mb-3">{{ exam.subject }} &middot; by {{ exam.teacher.display_name }}</div>
-      {% if exam.description %}<p>{{ exam.description }}</p>{% endif %}
+{% load static %}
+{% block title %}Instructions · {{ exam.title }} · ExamEase{% endblock %}
 
-      <div class="row g-3 text-center mb-3">
-        <div class="col-4"><div class="card stat"><div class="num">{{ question_count }}</div><div class="lbl">Questions</div></div></div>
-        <div class="col-4"><div class="card stat"><div class="num">{{ total_marks }}</div><div class="lbl">Total marks</div></div></div>
-        <div class="col-4"><div class="card stat"><div class="num">{{ minutes }}</div><div class="lbl">Minutes</div></div></div>
+{% block content %}
+<div class="mb-3">
+  <a href="{% url 'dashboard' %}" class="btn btn-sm btn-light border text-muted">
+    <i class="bi bi-arrow-left me-1"></i> Return to Dashboard
+  </a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card p-4 p-sm-5 shadow-sm border-0 rounded-4">
+      <div class="text-center mb-4 pb-2 border-bottom">
+        <span class="badge-soft soft-blue mb-2">{{ exam.subject }}</span>
+        <h2 class="fw-bold mb-1">{{ exam.title }}</h2>
+        <div class="text-muted small">
+          Conducted by <strong>Prof. {{ exam.teacher.display_name }}</strong>
+        </div>
       </div>
 
-      <h6>Before you start</h6>
-      <ul class="text-muted">
-        <li>The timer starts the moment you press <strong>Start</strong> and cannot be paused.</li>
-        <li>You can attempt this exam <strong>only once</strong>.</li>
-        <li>Your answers are saved automatically each time you pick an option.</li>
-        <li>When time runs out, the exam is submitted automatically.</li>
-        <li>If you close the page by accident, log in again and press <em>Continue</em>. The clock keeps running.</li>
-        <li>You need {{ exam.pass_percent }}% to pass.</li>
+      {% if exam.description %}
+        <div class="alert alert-light border rounded-3 small mb-4 text-slate-700">
+          <i class="bi bi-info-circle text-primary me-1"></i> {{ exam.description }}
+        </div>
+      {% endif %}
+
+      <!-- Metrics Row -->
+      <div class="row g-3 text-center mb-4">
+        <div class="col-4">
+          <div class="stat-card justify-content-center flex-column text-center p-3">
+            <div class="num text-primary fs-3">{{ question_count }}</div>
+            <div class="lbl">Questions</div>
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="stat-card justify-content-center flex-column text-center p-3">
+            <div class="num text-success fs-3">{{ total_marks }}</div>
+            <div class="lbl">Total Marks</div>
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="stat-card justify-content-center flex-column text-center p-3">
+            <div class="num text-amber fs-3">{{ minutes }}</div>
+            <div class="lbl">Minutes</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Instructions List -->
+      <h5 class="fw-bold text-dark mb-3">
+        <i class="bi bi-shield-check text-primary me-2"></i>Examination Rules & Guidelines
+      </h5>
+      <ul class="list-group list-group-flush mb-4 small text-slate-700">
+        <li class="list-group-item px-0 py-2 d-flex align-items-start gap-2">
+          <i class="bi bi-check2 text-primary mt-1"></i>
+          <div><strong>Continuous Timer:</strong> Once you press "Start Examination", your timer begins and runs continuously on the server. It cannot be paused or reset.</div>
+        </li>
+        <li class="list-group-item px-0 py-2 d-flex align-items-start gap-2">
+          <i class="bi bi-check2 text-primary mt-1"></i>
+          <div><strong>Single Attempt:</strong> You can attempt this examination only once. Once submitted or when time runs out, answers are finalized.</div>
+        </li>
+        <li class="list-group-item px-0 py-2 d-flex align-items-start gap-2">
+          <i class="bi bi-check2 text-primary mt-1"></i>
+          <div><strong>Real-Time Auto-Save:</strong> Your answers are saved immediately as you select each choice. A confirmation indicator shows sync status.</div>
+        </li>
+        <li class="list-group-item px-0 py-2 d-flex align-items-start gap-2">
+          <i class="bi bi-check2 text-primary mt-1"></i>
+          <div><strong>Automated Submission:</strong> If the timer expires while you are taking the exam, all currently saved answers will be submitted automatically.</div>
+        </li>
+        <li class="list-group-item px-0 py-2 d-flex align-items-start gap-2">
+          <i class="bi bi-check2 text-primary mt-1"></i>
+          <div><strong>Passing Grade:</strong> The passing score for this exam is set at <strong>{{ exam.pass_percent }}%</strong>.</div>
+        </li>
       </ul>
 
       {% if question_count == 0 %}
-        <div class="alert alert-warning mb-0">This exam has no questions yet.</div>
+        <div class="alert alert-warning mb-0 text-center">
+          <i class="bi bi-exclamation-triangle me-1"></i> This examination does not have any questions yet. Please notify your instructor.
+        </div>
       {% else %}
-        <form method="post">{% csrf_token %}
-          <button class="btn btn-brand btn-lg w-100" type="submit"><i class="bi bi-play-fill"></i> Start exam</button>
+        <form method="post">
+          {% csrf_token %}
+          <button class="btn btn-brand btn-lg w-100 py-3 fw-bold shadow-sm" type="submit">
+            <i class="bi bi-play-fill fs-5 me-1"></i> I Understand, Start Examination
+          </button>
         </form>
       {% endif %}
     </div>

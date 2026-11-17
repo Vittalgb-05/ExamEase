@@ -1,5 +1,5 @@
 from django import forms
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm, UserCreationForm
 
 from .models import ClassRoom, Choice, Exam, Question, User
 
@@ -20,6 +20,25 @@ class BootstrapMixin:
                 w.attrs["class"] = "form-select"
             else:
                 w.attrs["class"] = "form-control"
+
+
+class StyledPasswordChangeForm(BootstrapMixin, PasswordChangeForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._style()
+
+
+class ProfileForm(BootstrapMixin, forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ["first_name", "last_name", "email"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["first_name"].required = True
+        self.fields["last_name"].required = True
+        self.fields["email"].required = True
+        self._style()
 
 
 class LoginForm(BootstrapMixin, AuthenticationForm):
@@ -99,6 +118,8 @@ class ExamForm(BootstrapMixin, forms.ModelForm):
         self.fields["classroom"].required = False
         self.fields["classroom"].empty_label = "Every student (no class)"
         self.fields["classroom"].label = "Class"
+        self.fields["pass_percent"].label = "Pass Percentage (%)"
+        self.fields["pass_percent"].help_text = "Minimum percentage required to pass (e.g., 50 for 50%). For a 10-mark exam, 50% requires 5 marks to pass."
         self.fields["start_time"].input_formats = [DT_FORMAT]
         self.fields["end_time"].input_formats = [DT_FORMAT]
         self._style()

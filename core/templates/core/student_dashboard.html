@@ -1,105 +1,297 @@
 {% extends "core/base.html" %}
-{% block title %}My exams · Online Exam System{% endblock %}
-{% block content %}
-<h2 class="page-title mb-1">Hello, {{ user.display_name }}</h2>
-<div class="text-muted mb-4">Your exams in one place.</div>
+{% load static %}
+{% block title %}Student Dashboard · ExamEase{% endblock %}
 
-<div class="card p-3 mb-4">
-  <div class="row g-2 align-items-center">
-    <div class="col-md-7">
-      <div class="fw-semibold">Join a class</div>
-      <div class="small text-muted">
-        {% if joined_classes %}You are in: {% for c in joined_classes %}{{ c.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Enter the code your teacher gave you to see class exams.{% endif %}
+{% block content %}
+<!-- Welcome Header -->
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+  <div>
+    <h2 class="page-title mb-1">Hello, {{ user.display_name }} 👋</h2>
+    <div class="page-subtitle">Welcome to your assessment center. Track upcoming exams and review your results.</div>
+  </div>
+  <div>
+    <a href="{% url 'profile' %}" class="btn btn-sm btn-light border shadow-sm">
+      <i class="bi bi-person-gear me-1"></i> Profile Settings
+    </a>
+  </div>
+</div>
+
+<!-- Performance Summary Strip -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-4">
+    <div class="stat-card">
+      <div class="stat-icon blue">
+        <i class="bi bi-journal-check"></i>
+      </div>
+      <div class="stat-details">
+        <div class="num">{{ summary.count }}</div>
+        <div class="lbl">Exams Completed</div>
       </div>
     </div>
-    <div class="col-md-5">
-      <form method="post" action="{% url 'class_join' %}" class="d-flex gap-2">
+  </div>
+
+  <div class="col-sm-4">
+    <div class="stat-card">
+      <div class="stat-icon green">
+        <i class="bi bi-trophy"></i>
+      </div>
+      <div class="stat-details">
+        <div class="num">{% if summary.avg is not None %}{{ summary.avg }}%{% else %}--{% endif %}</div>
+        <div class="lbl">Average Score</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-4">
+    <div class="stat-card">
+      <div class="stat-icon amber">
+        <i class="bi bi-award"></i>
+      </div>
+      <div class="stat-details">
+        <div class="num">{{ summary.passed }}</div>
+        <div class="lbl">Passed Exams</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Class Enrollment & Search Bar -->
+<div class="row g-3 mb-4">
+  <!-- Join Class Widget -->
+  <div class="col-lg-6">
+    <div class="card p-3 shadow-sm border-0 rounded-4 h-100">
+      <div class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+        <i class="bi bi-building-add text-primary"></i> Join a Classroom
+      </div>
+      <div class="small text-muted mb-2">
+        {% if joined_classes %}
+          <div class="small text-muted mb-1">Enrolled Classrooms:</div>
+          <div class="d-flex flex-wrap gap-2 my-2">
+            {% for c in joined_classes %}
+              <span class="badge bg-light text-dark border d-inline-flex align-items-center gap-1 py-1 px-2">
+                <i class="bi bi-building text-primary"></i> {{ c.name }} (<code>{{ c.code }}</code>)
+                <form method="post" action="{% url 'class_leave' c.pk %}" class="d-inline ms-1" onsubmit="return confirm('Leave {{ c.name }}?');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-link p-0 text-danger fw-bold" title="Leave Class" style="font-size: 0.85rem; text-decoration: none; line-height: 1;">&times;</button>
+                </form>
+              </span>
+            {% endfor %}
+          </div>
+        {% else %}
+          Enter the 6-character code from your teacher to unlock your class exams.
+        {% endif %}
+      </div>
+      <form method="post" action="{% url 'class_join' %}" class="d-flex gap-2 mt-auto">
         {% csrf_token %}
-        <input type="text" name="code" class="form-control text-uppercase" placeholder="Class code" maxlength="8" required>
-        <button class="btn btn-brand text-nowrap" type="submit">Join</button>
+        <input type="text" name="code" class="form-control text-uppercase font-monospace" placeholder="e.g. A7K2QX" maxlength="8" required>
+        <button class="btn btn-brand text-nowrap" type="submit">
+          <i class="bi bi-box-arrow-in-right me-1"></i> Join Class
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Search Filter -->
+  <div class="col-lg-6">
+    <div class="card p-3 shadow-sm border-0 rounded-4 h-100 d-flex flex-column justify-content-center">
+      <div class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+        <i class="bi bi-search text-primary"></i> Search Examinations
+      </div>
+      <div class="small text-muted mb-2">Find available or completed exams by subject or title.</div>
+      <form method="get" class="d-flex gap-2">
+        <input type="text" name="q" class="form-control" placeholder="Search by exam title or subject..." value="{{ search_query }}">
+        <button type="submit" class="btn btn-light border text-nowrap">Filter</button>
+        {% if search_query %}
+          <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Clear</a>
+        {% endif %}
       </form>
     </div>
   </div>
 </div>
 
-{% if summary.count %}
-<div class="row g-3 mb-4">
-  <div class="col-4"><div class="card stat"><div class="num">{{ summary.count }}</div><div class="lbl">Exams taken</div></div></div>
-  <div class="col-4"><div class="card stat"><div class="num">{{ summary.avg }}%</div><div class="lbl">Average score</div></div></div>
-  <div class="col-4"><div class="card stat"><div class="num">{{ summary.passed }}</div><div class="lbl">Passed</div></div></div>
+<!-- SECTION 1: Available Now -->
+<div class="mb-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h4 class="fw-bold mb-0 text-slate-900 d-flex align-items-center gap-2">
+      <span class="badge-soft soft-green px-2 py-1"><i class="bi bi-broadcast"></i></span> Available Now
+    </h4>
+    <span class="text-muted small">{{ available|length }} open exam{{ available|length|pluralize }}</span>
+  </div>
+
+  <div class="row g-3">
+    {% for exam in available %}
+      <div class="col-md-6 col-xl-4">
+        <div class="card h-100 shadow-sm border-0 rounded-4 card-hoverable p-3 d-flex flex-column">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+              <span class="badge-soft soft-blue mb-1">{{ exam.subject }}</span>
+              <h5 class="fw-bold text-dark mb-1">{{ exam.title }}</h5>
+              <div class="small text-muted">
+                <i class="bi bi-person me-1"></i> Prof. {{ exam.teacher.display_name }}
+              </div>
+            </div>
+            <span class="badge-soft soft-green">Open</span>
+          </div>
+
+          <div class="bg-light rounded-3 p-2 small text-muted my-2">
+            <div class="d-flex justify-content-between mb-1">
+              <span><i class="bi bi-stopwatch me-1"></i> Duration:</span>
+              <span class="fw-semibold text-dark">{{ exam.duration_minutes }} minutes</span>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span><i class="bi bi-calendar-x me-1"></i> Deadline:</span>
+              <span class="fw-semibold text-danger">{{ exam.end_time|date:"d M, H:i" }}</span>
+            </div>
+          </div>
+
+          {% if exam.description %}
+            <p class="small text-muted text-truncate mb-3">{{ exam.description }}</p>
+          {% endif %}
+
+          <div class="mt-auto pt-2">
+            <a class="btn {% if exam.attempt %}btn-warning text-dark{% else %}btn-brand{% endif %} w-100 fw-bold shadow-sm" href="{% url 'exam_start' exam.pk %}">
+              {% if exam.attempt %}
+                <i class="bi bi-play-circle me-1"></i> Continue Exam
+              {% else %}
+                <i class="bi bi-pencil-square me-1"></i> Start Exam
+              {% endif %}
+            </a>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="col-12">
+        <div class="card p-4 text-center text-muted border-0 bg-white rounded-4 shadow-sm">
+          <i class="bi bi-check-circle fs-3 text-success mb-2"></i>
+          <div>No open exams right now. Check upcoming exams or review your past attempts below.</div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- SECTION 2: Upcoming Examinations -->
+{% if upcoming %}
+<div class="mb-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h4 class="fw-bold mb-0 text-slate-900 d-flex align-items-center gap-2">
+      <span class="badge-soft soft-blue px-2 py-1"><i class="bi bi-calendar-event"></i></span> Upcoming Scheduled Exams
+    </h4>
+  </div>
+
+  <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <ul class="list-group list-group-flush">
+      {% for exam in upcoming %}
+        <li class="list-group-item p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div>
+            <span class="fw-bold text-dark">{{ exam.title }}</span>
+            <span class="badge-soft soft-gray ms-2">{{ exam.subject }}</span>
+            <div class="small text-muted mt-1">
+              <i class="bi bi-person me-1"></i> {{ exam.teacher.display_name }} &middot; {{ exam.duration_minutes }} min limit
+            </div>
+          </div>
+          <div class="text-end">
+            <span class="badge-soft soft-blue">
+              <i class="bi bi-clock me-1"></i> Opens {{ exam.start_time|date:"d M Y, H:i" }}
+            </span>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
 </div>
 {% endif %}
 
-<h5 class="mb-2">Available now</h5>
-<div class="row g-3 mb-4">
-  {% for exam in available %}
-  <div class="col-md-6">
-    <div class="card p-3 h-100">
-      <div class="d-flex justify-content-between">
-        <div>
-          <div class="fw-semibold">{{ exam.title }}</div>
-          <div class="small text-muted">{{ exam.subject }} &middot; by {{ exam.teacher.display_name }}</div>
-        </div>
-        <span class="badge-soft soft-green align-self-start">Open</span>
-      </div>
-      <div class="small text-muted my-2"><i class="bi bi-stopwatch"></i> {{ exam.duration_minutes }} min &middot; closes {{ exam.end_time|date:"d M, H:i" }}</div>
-      <a class="btn btn-brand mt-auto" href="{% url 'exam_start' exam.pk %}">
-        {% if exam.attempt %}Continue exam{% else %}Start exam{% endif %}
-      </a>
+<!-- SECTION 3: Completed Examinations -->
+<div class="mb-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h4 class="fw-bold mb-0 text-slate-900 d-flex align-items-center gap-2">
+      <span class="badge-soft soft-navy px-2 py-1"><i class="bi bi-check2-circle"></i></span> Completed Examinations
+    </h4>
+  </div>
+
+  <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Examination</th>
+            <th>Raw Score</th>
+            <th>Percentage</th>
+            <th>Grade Status</th>
+            <th>Submitted At</th>
+            <th class="text-end pe-3">Review</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for exam in completed %}
+          <tr>
+            <td>
+              <div class="fw-bold text-dark">{{ exam.title }}</div>
+              <div class="small text-muted">{{ exam.subject }} &middot; {{ exam.teacher.display_name }}</div>
+            </td>
+            <td>
+              <span class="fw-bold text-dark">{{ exam.attempt.score }}</span> / {{ exam.attempt.total }}
+            </td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <span class="fw-bold">{{ exam.attempt.percent }}%</span>
+                <div class="progress flex-grow-1" style="height: 6px; width: 60px;">
+                  <div class="progress-bar {% if exam.attempt.passed %}bg-success{% else %}bg-danger{% endif %}" role="progressbar" style="width: {{ exam.attempt.percent }}%;"></div>
+                </div>
+              </div>
+            </td>
+            <td>
+              {% if exam.attempt.passed %}
+                <span class="badge-soft soft-green"><i class="bi bi-check-circle-fill"></i> Passed</span>
+              {% else %}
+                <span class="badge-soft soft-red"><i class="bi bi-x-circle-fill"></i> Not Passed</span>
+              {% endif %}
+            </td>
+            <td class="small text-muted">
+              {{ exam.attempt.submitted_at|date:"d M Y, H:i" }}
+            </td>
+            <td class="text-end pe-3">
+              <a class="btn btn-sm btn-outline-brand" href="{% url 'attempt_result' exam.attempt.pk %}">
+                <i class="bi bi-eye me-1"></i> Review & Report
+              </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" class="text-center text-muted p-4">
+              You haven't completed any examinations yet.
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
-  {% empty %}
-  <div class="col-12"><div class="card p-4 text-center text-muted">No exam is open right now.</div></div>
-  {% endfor %}
 </div>
 
-{% if upcoming %}
-<h5 class="mb-2">Upcoming</h5>
-<div class="card mb-4">
-  <ul class="list-group list-group-flush">
-    {% for exam in upcoming %}
-    <li class="list-group-item d-flex justify-content-between flex-wrap gap-1">
-      <span><span class="fw-semibold">{{ exam.title }}</span> <span class="text-muted small">&middot; {{ exam.subject }}</span></span>
-      <span class="small text-muted">Opens {{ exam.start_time|date:"d M, H:i" }}</span>
-    </li>
-    {% endfor %}
-  </ul>
-</div>
-{% endif %}
-
-<h5 class="mb-2">Completed</h5>
-<div class="card mb-4">
-  <div class="table-responsive">
-    <table class="table align-middle mb-0">
-      <thead class="table-light"><tr><th>Exam</th><th>Score</th><th>Percent</th><th>Result</th><th></th></tr></thead>
-      <tbody>
-      {% for exam in completed %}
-        <tr>
-          <td><span class="fw-semibold">{{ exam.title }}</span><div class="small text-muted">{{ exam.subject }}</div></td>
-          <td>{{ exam.attempt.score }} / {{ exam.attempt.total }}</td>
-          <td>{{ exam.attempt.percent }}%</td>
-          <td>{% if exam.attempt.passed %}<span class="badge-soft soft-green">Pass</span>{% else %}<span class="badge-soft soft-red">Fail</span>{% endif %}</td>
-          <td class="text-end"><a class="btn btn-sm btn-light border" href="{% url 'attempt_result' exam.attempt.pk %}">Review</a></td>
-        </tr>
-      {% empty %}
-        <tr><td colspan="5" class="text-center text-muted p-4">You have not finished any exam yet.</td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
-
+<!-- SECTION 4: Missed / Closed Examinations -->
 {% if missed %}
-<h5 class="mb-2">Missed</h5>
-<div class="card">
-  <ul class="list-group list-group-flush">
-    {% for exam in missed %}
-    <li class="list-group-item d-flex justify-content-between">
-      <span>{{ exam.title }} <span class="text-muted small">&middot; {{ exam.subject }}</span></span>
-      <span class="badge-soft soft-gray">Closed</span>
-    </li>
-    {% endfor %}
-  </ul>
+<div class="mb-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h4 class="fw-bold mb-0 text-slate-900 d-flex align-items-center gap-2">
+      <span class="badge-soft soft-gray px-2 py-1"><i class="bi bi-archive"></i></span> Closed Examinations
+    </h4>
+  </div>
+
+  <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <ul class="list-group list-group-flush">
+      {% for exam in missed %}
+        <li class="list-group-item p-3 d-flex justify-content-between align-items-center">
+          <div>
+            <span class="fw-semibold text-muted">{{ exam.title }}</span>
+            <span class="small text-muted ms-2">&middot; {{ exam.subject }}</span>
+          </div>
+          <span class="badge-soft soft-gray">Closed</span>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
 </div>
 {% endif %}
 {% endblock %}

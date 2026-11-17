@@ -13,7 +13,7 @@ from datetime import timedelta
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from core.models import Answer, Attempt, Choice, Exam, Question, User
+from core.models import Answer, Attempt, Choice, ClassRoom, Enrollment, Exam, Question, User
 
 DS_QUESTIONS = [
     ("Which data structure uses the LIFO principle?", "Stacks & Queues", ["Stack", "Queue", "Array", "Heap"], 0, 1),
@@ -71,12 +71,21 @@ class Command(BaseCommand):
             u.save()
             students.append(u)
 
+        # Demo Classroom
+        classroom, _ = ClassRoom.objects.get_or_create(
+            teacher=teacher,
+            name="CS101: Computer Science & Data Structures",
+        )
+        for s in students[:8]:
+            Enrollment.objects.get_or_create(classroom=classroom, student=s)
+
         # 1) closed exam with simulated attempts -> analytics demo
         past, created = Exam.objects.get_or_create(
             teacher=teacher,
             title="Data Structures Mid-term (Demo)",
             defaults={
                 "subject": "Data Structures",
+                "classroom": classroom,
                 "description": "Demo exam with simulated results so the analytics page has data.",
                 "duration_minutes": 30,
                 "start_time": now - timedelta(days=3, hours=2),
@@ -95,6 +104,7 @@ class Command(BaseCommand):
             title="Python Basics Quiz (Live Demo)",
             defaults={
                 "subject": "Programming",
+                "classroom": classroom,
                 "description": "Short quiz, open for the next few days. Log in as a student to try it.",
                 "duration_minutes": 10,
                 "start_time": now - timedelta(hours=1),
@@ -106,9 +116,10 @@ class Command(BaseCommand):
         if created:
             self._add_questions(live, PY_QUESTIONS)
 
-        self.stdout.write(self.style.SUCCESS("Demo data ready."))
+        self.stdout.write(self.style.SUCCESS("ExamEase demo data successfully seeded."))
         self.stdout.write(f"Teacher login : teacher1 / {pw}")
         self.stdout.write(f"Student login : student01 ... student14 / {pw}")
+        self.stdout.write(f"Classroom Code: {classroom.code} ({classroom.name})")
 
     def _add_questions(self, exam, rows):
         for text, topic, options, correct, marks in rows:

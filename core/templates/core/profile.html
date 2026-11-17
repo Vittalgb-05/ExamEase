@@ -1,0 +1,156 @@
+{% extends "core/base.html" %}
+{% load static %}
+{% block title %}My Profile · ExamEase{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <a href="{% url 'dashboard' %}" class="btn btn-sm btn-light border text-muted mb-2">
+    <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+  </a>
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div>
+      <h2 class="page-title mb-0">My Profile</h2>
+      <div class="page-subtitle">Manage your account information and preferences.</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Left Column: User Summary Card -->
+  <div class="col-lg-4">
+    <div class="card p-4 text-center shadow-sm rounded-4 h-100">
+      <div class="mx-auto rounded-circle bg-primary text-white d-flex align-items-center justify-content-center shadow-sm mb-3" style="width: 80px; height: 80px; font-size: 2rem; font-weight: 700;">
+        {{ user.username|slice:":1"|upper }}
+      </div>
+      <h4 class="fw-bold mb-1">{{ user.display_name }}</h4>
+      <div class="text-muted small mb-2">@{{ user.username }}</div>
+      
+      <div>
+        <span class="badge-soft {% if user.is_teacher %}soft-blue{% else %}soft-green{% endif %} px-3 py-1">
+          <i class="bi {% if user.is_teacher %}bi-person-workspace{% else %}bi-mortarboard{% endif %} me-1"></i>
+          {{ user.get_role_display }}
+        </span>
+      </div>
+
+      <div class="border-top mt-4 pt-3 text-start small text-muted">
+        <div class="d-flex justify-content-between py-1">
+          <span><i class="bi bi-envelope me-1"></i> Email:</span>
+          <span class="fw-semibold text-dark text-truncate" style="max-width: 170px;">{{ user.email|default:"Not specified" }}</span>
+        </div>
+        <div class="d-flex justify-content-between py-1">
+          <span><i class="bi bi-calendar-event me-1"></i> Joined:</span>
+          <span class="fw-semibold text-dark">{{ user.date_joined|date:"d M Y" }}</span>
+        </div>
+        <div class="d-flex justify-content-between py-1">
+          <span><i class="bi bi-shield-check me-1"></i> Status:</span>
+          <span class="text-success fw-semibold">Active</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Stats & Edit Profile Form -->
+  <div class="col-lg-8">
+    <!-- Activity Summary Cards -->
+    <div class="row g-3 mb-4">
+      {% if user.is_teacher %}
+        <div class="col-sm-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-icon blue"><i class="bi bi-journal-text"></i></div>
+            <div class="stat-details">
+              <div class="num">{{ user_stats.exams_count }}</div>
+              <div class="lbl">Exams</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-icon green"><i class="bi bi-people"></i></div>
+            <div class="stat-details">
+              <div class="num">{{ user_stats.classes_count }}</div>
+              <div class="lbl">Classes</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-icon amber"><i class="bi bi-mortarboard"></i></div>
+            <div class="stat-details">
+              <div class="num">{{ user_stats.students_count }}</div>
+              <div class="lbl">Students</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-icon navy"><i class="bi bi-check2-circle"></i></div>
+            <div class="stat-details">
+              <div class="num">{{ user_stats.submissions_count }}</div>
+              <div class="lbl">Submissions</div>
+            </div>
+          </div>
+        </div>
+      {% else %}
+        <div class="col-sm-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-icon blue"><i class="bi bi-journal-check"></i></div>
+            <div class="stat-details">
+              <div class="num">{{ user_stats.exams_taken }}</div>
+              <div class="lbl">Taken</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-icon green"><i class="bi bi-percent"></i></div>
+            <div class="stat-details">
+              <div class="num">{{ user_stats.avg_score }}%</div>
+              <div class="lbl">Avg Score</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-icon amber"><i class="bi bi-trophy"></i></div>
+            <div class="stat-details">
+              <div class="num">{{ user_stats.passed_count }}</div>
+              <div class="lbl">Passed</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-icon navy"><i class="bi bi-building"></i></div>
+            <div class="stat-details">
+              <div class="num">{{ user_stats.classes_count }}</div>
+              <div class="lbl">Classes</div>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Edit Profile Card -->
+    <div class="card p-4 shadow-sm rounded-4">
+      <h5 class="fw-bold mb-3"><i class="bi bi-pencil-square me-2 text-primary"></i>Personal Information</h5>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% include "core/_form_fields.html" %}
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 pt-2 border-top">
+          <a href="{% url 'password_change' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-key me-1"></i> Change Password
+          </a>
+          <div class="d-flex gap-2">
+            <a href="{% url 'dashboard' %}" class="btn btn-light border">Cancel</a>
+            <button class="btn btn-brand" type="submit">
+              <i class="bi bi-check2 me-1"></i> Save Changes
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

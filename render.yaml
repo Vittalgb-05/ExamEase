@@ -1,8 +1,9 @@
-# Render Blueprint. Create a "Blueprint" on render.com and point it at your GitHub repo.
-# Set DATABASE_URL yourself (see README, Neon free PostgreSQL), SECRET_KEY is generated.
+# Render Blueprint for ExamEase
+# Create a "Blueprint" on render.com and connect your GitHub repository.
+# Set DATABASE_URL (e.g. from Neon or Render PostgreSQL); SECRET_KEY is generated automatically.
 services:
   - type: web
-    name: online-exam-system
+    name: examease
     runtime: python
     plan: free
     buildCommand: "./build.sh"

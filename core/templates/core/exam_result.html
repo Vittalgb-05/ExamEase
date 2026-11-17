@@ -1,39 +1,160 @@
 {% extends "core/base.html" %}
-{% block title %}Result · {{ exam.title }}{% endblock %}
+{% load static %}
+{% block title %}Result · {{ exam.title }} · ExamEase{% endblock %}
+
 {% block content %}
-<a href="{% url 'dashboard' %}" class="text-decoration-none small"><i class="bi bi-arrow-left"></i> My exams</a>
-
-<div class="card p-4 mt-2 mb-4 text-center">
-  <div class="text-muted">{{ exam.title }} &middot; {{ exam.subject }}</div>
-  <div class="display-4 fw-bold" style="color: var(--brand)">{{ attempt.score }} / {{ attempt.total }}</div>
-  <div class="fs-5">{{ attempt.percent }}%
-    {% if attempt.passed %}<span class="badge-soft soft-green ms-2">Passed</span>{% else %}<span class="badge-soft soft-red ms-2">Not passed</span>{% endif %}
-  </div>
-  <div class="small text-muted mt-1">Pass mark {{ exam.pass_percent }}% &middot; finished in {{ attempt.minutes_taken }} min</div>
+<div class="mb-3 d-flex flex-wrap justify-content-between align-items-center gap-2 no-print">
+  {% if is_teacher_viewer %}
+    <a href="{% url 'exam_results' exam.pk %}" class="btn btn-sm btn-light border text-muted">
+      <i class="bi bi-arrow-left me-1"></i> Back to Exam Results
+    </a>
+  {% else %}
+    <a href="{% url 'dashboard' %}" class="btn btn-sm btn-light border text-muted">
+      <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+    </a>
+  {% endif %}
+  <button class="btn btn-sm btn-brand shadow-sm" onclick="window.print()">
+    <i class="bi bi-printer me-1"></i> Print / Save Report (PDF)
+  </button>
 </div>
 
-<h5 class="mb-3">Answer review</h5>
-{% for r in review %}
-<div class="card mb-3">
-  <div class="card-body">
-    <div class="d-flex justify-content-between mb-2">
-      <span class="badge-soft {% if r.is_correct %}soft-green{% elif r.picked %}soft-red{% else %}soft-gray{% endif %}">
-        Question {{ forloop.counter }} &middot; {% if r.is_correct %}Correct{% elif r.picked %}Wrong{% else %}Skipped{% endif %}
-      </span>
-      <span class="small text-muted">{% if r.is_correct %}{{ r.question.marks }}{% else %}0{% endif %} / {{ r.question.marks }}</span>
+<!-- Printable Formal Transcript Header (Visible on print) -->
+<div class="print-only mb-4 pb-3 border-bottom text-center">
+  <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+    <img src="{% static 'core/img/logo.svg' %}" alt="ExamEase" width="36" height="36">
+    <h2 class="fw-bold mb-0 text-dark">ExamEase Examination Transcript</h2>
+  </div>
+  <div class="text-muted small">Smart Examinations. Simple Evaluation. &middot; Official Academic Record</div>
+  <hr class="my-2">
+  <div class="row text-start small mt-3">
+    <div class="col-6">
+      <div><strong>Student Name:</strong> {{ attempt.student.display_name }}</div>
+      <div><strong>Username:</strong> @{{ attempt.student.username }}</div>
+      <div><strong>Email:</strong> {{ attempt.student.email|default:"N/A" }}</div>
     </div>
-    <p class="fw-semibold" style="white-space: pre-line">{{ r.question.text }}</p>
-    {% for c in r.options %}
-      <div class="p-2 px-3 mb-1 rounded border
-        {% if c.pk == r.correct_id %}border-success bg-success-subtle{% elif c.pk == r.picked %}border-danger bg-danger-subtle{% endif %}">
-        {% if c.pk == r.correct_id %}<i class="bi bi-check-circle-fill text-success me-1"></i>
-        {% elif c.pk == r.picked %}<i class="bi bi-x-circle-fill text-danger me-1"></i>
-        {% else %}<i class="bi bi-circle text-muted me-1"></i>{% endif %}
-        {{ c.text }}
-        {% if c.pk == r.picked %}<span class="small text-muted ms-1">(your answer)</span>{% endif %}
-      </div>
-    {% endfor %}
+    <div class="col-6 text-end">
+      <div><strong>Examination:</strong> {{ exam.title }}</div>
+      <div><strong>Subject:</strong> {{ exam.subject }}</div>
+      <div><strong>Date:</strong> {{ attempt.submitted_at|date:"d M Y, H:i" }}</div>
+    </div>
   </div>
 </div>
+
+<!-- Student Scorecard Card -->
+<div class="card p-4 p-md-5 mb-4 text-center shadow-sm border-0 rounded-4" style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);">
+  <span class="badge-soft soft-blue mb-2 mx-auto d-inline-block">{{ exam.subject }}</span>
+  <h2 class="fw-extrabold mb-1 text-dark">{{ exam.title }}</h2>
+  <div class="text-muted small mb-4">Instructor: Prof. {{ exam.teacher.display_name }} &middot; Submitted {{ attempt.submitted_at|date:"d M Y, H:i" }}</div>
+
+  <!-- Giant Score Callout -->
+  <div class="display-3 fw-extrabold my-2" style="color: var(--brand-blue); letter-spacing: -0.04em;">
+    {{ attempt.score }} <span class="fs-2 text-muted fw-normal">/ {{ attempt.total }}</span>
+  </div>
+
+  <div class="d-flex justify-content-center align-items-center gap-3 my-2">
+    <span class="fs-4 fw-bold text-dark">{{ attempt.percent }}%</span>
+    {% if attempt.passed %}
+      <span class="badge-soft soft-green px-3 py-1 fs-6">
+        <i class="bi bi-check-circle-fill me-1"></i> Passed
+      </span>
+    {% else %}
+      <span class="badge-soft soft-red px-3 py-1 fs-6">
+        <i class="bi bi-x-circle-fill me-1"></i> Not Passed
+      </span>
+    {% endif %}
+  </div>
+
+  <div class="text-muted small mt-2">
+    Pass Mark: <strong>{{ exam.pass_percent }}%</strong> &middot; Time Taken: <strong>{{ attempt.minutes_taken }} minutes</strong>
+    {% if attempt.tab_switches %}
+      &middot; Tab Switches Recorded: <strong class="text-warning">{{ attempt.tab_switches }}</strong>
+    {% endif %}
+  </div>
+
+  <!-- Mini Progress Bar -->
+  <div class="progress mx-auto mt-4" style="max-width: 320px; height: 8px;">
+    <div class="progress-bar {% if attempt.passed %}bg-success{% else %}bg-danger{% endif %}" role="progressbar" style="width: {{ attempt.percent }}%;"></div>
+  </div>
+</div>
+
+<!-- Answer Review Breakdown -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="fw-bold mb-0 text-dark">
+    <i class="bi bi-card-checklist me-2 text-primary"></i>Answer Breakdown & Review
+  </h4>
+  <span class="small text-muted">{{ review|length }} question{{ review|length|pluralize }} reviewed</span>
+</div>
+
+{% for r in review %}
+  <div class="card mb-3 shadow-sm border-0 rounded-4 overflow-hidden">
+    <div class="card-body p-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-primary rounded-pill">Question {{ forloop.counter }}</span>
+          {% if r.is_correct %}
+            <span class="badge-soft soft-green"><i class="bi bi-check-circle-fill"></i> Correct</span>
+          {% elif r.picked %}
+            <span class="badge-soft soft-red"><i class="bi bi-x-circle-fill"></i> Incorrect</span>
+          {% else %}
+            <span class="badge-soft soft-gray"><i class="bi bi-dash-circle"></i> Skipped</span>
+          {% endif %}
+          <span class="badge-soft soft-blue">{{ r.question.topic }}</span>
+        </div>
+        <span class="fw-bold {% if r.is_correct %}text-success{% else %}text-muted{% endif %}">
+          {% if r.is_correct %}+{{ r.question.marks }}{% else %}0{% endif %} / {{ r.question.marks }} mark{{ r.question.marks|pluralize }}
+        </span>
+      </div>
+
+      <p class="fw-bold text-dark fs-6 mb-3" style="white-space: pre-line;">{{ r.question.text }}</p>
+
+      <div class="row g-2">
+        {% for c in r.options %}
+          <div class="col-12">
+            <div class="p-3 rounded-3 border d-flex align-items-center justify-content-between
+              {% if c.pk == r.correct_id %}
+                border-success bg-success-subtle text-success-emphasis fw-semibold
+              {% elif c.pk == r.picked %}
+                border-danger bg-danger-subtle text-danger-emphasis fw-semibold
+              {% else %}
+                bg-light text-muted
+              {% endif %}">
+              <div class="d-flex align-items-center gap-2">
+                {% if c.pk == r.correct_id %}
+                  <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                {% elif c.pk == r.picked %}
+                  <i class="bi bi-x-circle-fill text-danger fs-5"></i>
+                {% else %}
+                  <i class="bi bi-circle text-muted"></i>
+                {% endif %}
+                <span>{{ c.text }}</span>
+              </div>
+
+              <div>
+                {% if c.pk == r.picked and c.pk == r.correct_id %}
+                  <span class="badge bg-success">Your Answer (Correct)</span>
+                {% elif c.pk == r.picked %}
+                  <span class="badge bg-danger">Your Answer</span>
+                {% elif c.pk == r.correct_id %}
+                  <span class="badge bg-success">Correct Key</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
 {% endfor %}
+
+<div class="text-center mt-4 no-print">
+  {% if is_teacher_viewer %}
+    <a href="{% url 'exam_results' exam.pk %}" class="btn btn-outline-brand">
+      <i class="bi bi-arrow-left me-1"></i> Return to Exam Results
+    </a>
+  {% else %}
+    <a href="{% url 'dashboard' %}" class="btn btn-outline-brand">
+      <i class="bi bi-arrow-left me-1"></i> Return to Student Dashboard
+    </a>
+  {% endif %}
+</div>
 {% endblock %}
