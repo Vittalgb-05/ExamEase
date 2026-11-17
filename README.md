@@ -1,16 +1,30 @@
 # ExamEase – Online Examination Management Platform
 
 > **Smart Examinations. Simple Evaluation.**  
-> **Customized and enhanced by Vittal G B**
+> **Developed by Vittal G B**  
+> 🌐 **Live Website:** [**https://examease-i8mj.onrender.com**](https://examease-i8mj.onrender.com)
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Render-46E3B7.svg?style=flat-square&logo=render&logoColor=white)](https://examease-i8mj.onrender.com)
 [![Developer: Vittal G B](https://img.shields.io/badge/Developer-Vittal%20G%20B-1e40af.svg?style=flat-square)](https://github.com/Vittalgb-05)
 [![Repository](https://img.shields.io/badge/GitHub-Vittalgb--05%2FExamEase-0f172a.svg?style=flat-square&logo=github)](https://github.com/Vittalgb-05/ExamEase)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776ab.svg?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![Django 5.x](https://img.shields.io/badge/Django-5.x-092e20.svg?style=flat-square&logo=django&logoColor=white)](https://www.djangoproject.com/)
 [![Bootstrap 5.3](https://img.shields.io/badge/Bootstrap-5.3-7952b3.svg?style=flat-square&logo=bootstrap&logoColor=white)](https://getbootstrap.com/)
 [![Chart.js](https://img.shields.io/badge/Chart.js-4.x-FF6384.svg?style=flat-square&logo=chartdotjs&logoColor=white)](https://www.chartjs.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Ready-336791.svg?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Render%20Cloud-336791.svg?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-10b981.svg?style=flat-square)](LICENSE)
+
+---
+
+## Live Demo & Instant Access
+
+The application is deployed live on Render with managed PostgreSQL:
+
+👉 **Live URL:** [**https://examease-i8mj.onrender.com**](https://examease-i8mj.onrender.com)
+
+The login page features **1-Click Demo Fill** buttons for immediate testing:
+- **Teacher Account:** `teacher1` / `demo12345` (Author examinations, inspect analytics, manage classrooms)
+- **Student Account:** `student01` / `demo12345` (Take live examinations, review immediate scorecards)
 
 ---
 
@@ -252,14 +266,6 @@ ExamEase includes pre-configured deployment files (`render.yaml`, `build.sh`, `P
 
 ---
 
-## Attribution & License
+## License
 
-This project is a customized, enhanced, and rebranded portfolio adaptation based on the open-source **Online Exam System** originally created by **Md. Asibul Islam** ([asibulislam/online-exam-system](https://github.com/asibulislam/online-exam-system)).
-
-The original codebase is licensed under the **MIT License**, which is fully preserved in the [`LICENSE`](LICENSE) file. All UI redesigns, branding transformations, profile management systems, search enhancements, browser testing infrastructure, and examination experience improvements were developed by **Vittal G B** as part of the ExamEase portfolio project.
-
-```
-MIT License
-Copyright (c) 2026 Md. Asibul Islam
-Customized and Enhanced by Vittal G B, 2026
-```
+This project is open-source software licensed under the [MIT License](LICENSE).
